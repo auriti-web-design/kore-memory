@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kore-memory"
-version = "0.2.0"
+version = "0.3.0"
 description = "The memory layer that thinks like a human: remembers what matters, forgets what doesn't, and never calls home."
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
-keywords = ["ai", "memory", "agents", "llm", "embeddings", "semantic-search", "rag"]
+keywords = ["ai", "memory", "agents", "llm", "embeddings", "semantic-search", "rag", "forgetting-curve"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -37,15 +37,20 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/juanauriti/kore-memory"
-Repository = "https://github.com/juanauriti/kore-memory"
-Issues = "https://github.com/juanauriti/kore-memory/issues"
+Homepage = "https://github.com/auriti-web-design/kore-memory"
+Repository = "https://github.com/auriti-web-design/kore-memory"
+Issues = "https://github.com/auriti-web-design/kore-memory/issues"
 
 [project.scripts]
-kore = "kore.cli:main"
+kore = "src.cli:main"
+kore-welcome = "src.welcome:print_welcome"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+artifacts = ["assets/logo.svg"]
+
+[tool.hatch.build.hooks.custom]
+path = "hatch_build.py"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
