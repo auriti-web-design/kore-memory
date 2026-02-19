@@ -1,0 +1,68 @@
+"""
+Kore — Pydantic models
+Request/response schemas with validation.
+"""
+
+from datetime import datetime
+from typing import Literal
+
+from pydantic import BaseModel, Field, field_validator
+
+
+Category = Literal[
+    "general",
+    "project",
+    "trading",
+    "finance",
+    "person",
+    "preference",
+    "task",
+    "decision",
+]
+
+
+class MemorySaveRequest(BaseModel):
+    content: str = Field(..., min_length=3, max_length=4000)
+    category: Category = Field("general")
+    importance: int = Field(1, ge=1, le=5, description="1=auto-scored, 2-5=explicit")
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("Content cannot be blank")
+        return v.strip()
+
+
+class MemoryRecord(BaseModel):
+    id: int
+    content: str
+    category: str
+    importance: int
+    decay_score: float = 1.0
+    created_at: datetime
+    updated_at: datetime
+    score: float | None = None
+
+
+class MemorySaveResponse(BaseModel):
+    id: int
+    importance: int
+    message: str = "Memory saved"
+
+
+class MemorySearchResponse(BaseModel):
+    results: list[MemoryRecord]
+    total: int
+
+
+class DecayRunResponse(BaseModel):
+    updated: int
+    message: str = "Decay pass complete"
+
+
+class CompressRunResponse(BaseModel):
+    clusters_found: int
+    memories_merged: int
+    new_records_created: int
+    message: str = "Compression complete"
