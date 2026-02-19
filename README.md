@@ -2,6 +2,7 @@
 
 > **The memory layer that thinks like a human: remembers what matters, forgets what doesn't, and never calls home.**
 
+[![PyPI version](https://img.shields.io/pypi/v/kore-memory.svg)](https://pypi.org/project/kore-memory/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://python.org)
 [![Zero Cloud Dependencies](https://img.shields.io/badge/cloud-zero-green.svg)]()
