@@ -250,6 +250,16 @@ Interactive docs: **http://localhost:8765/docs**
 
 ---
 
+## 🤝 Built with OpenClaw
+
+Kore was developed and is actively used inside **[OpenClaw](https://openclaw.ai)** — a personal AI agent platform that runs Claude on your own infrastructure.
+
+OpenClaw uses Kore as its persistent memory layer: every important conversation, decision, and preference gets stored, scored, and retrieved semantically across sessions.
+
+If you're building AI agents with OpenClaw, Kore integrates natively — just point your skill at `http://localhost:8765`.
+
+---
+
 ## 🛠️ Development
 
 ```bash
@@ -270,4 +280,6 @@ MIT © [Juan Auriti](https://github.com/auriti-web-design)
 
 <div align="center">
 <sub>Built for AI agents that deserve better memory.</sub>
+<br/>
+<sub>Developed and battle-tested with <a href="https://openclaw.ai">OpenClaw</a> — the personal AI agent platform.</sub>
 </div>
