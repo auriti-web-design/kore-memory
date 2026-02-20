@@ -10,13 +10,17 @@ import tempfile
 import pytest
 from fastapi.testclient import TestClient
 
-# Use temp DB + local-only mode (no auth required)
+# DB temporaneo + local-only mode (no auth richiesta nei test)
 os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
 os.environ["KORE_LOCAL_ONLY"] = "1"
 
+from src.database import init_db  # noqa: E402
 from src.main import app  # noqa: E402
 
-# Default headers: agent namespace for isolation tests
+# Inizializza schema — il TestClient non attiva il lifespan senza context manager
+init_db()
+
+# Header di default: namespace agent per test di isolamento
 HEADERS = {"X-Agent-Id": "test-agent"}
 OTHER_AGENT = {"X-Agent-Id": "other-agent"}
 
