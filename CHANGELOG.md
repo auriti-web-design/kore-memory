@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.0] - 2026-02-20
+
+### ✨ Added
+- **MCP Server** — native Model Context Protocol integration for Claude, Cursor, and any MCP client (`kore-mcp` command). 6 tools: save, search, timeline, decay, compress, export. 1 resource: `kore://health`
+- **Tags** — tag any memory, search by tag, agent-scoped. Normalized to lowercase, duplicates ignored (`POST/DELETE/GET /memories/{id}/tags`, `GET /tags/{tag}/memories`)
+- **Relations** — bidirectional knowledge graph between memories. Cross-agent linking prevented (`POST/GET /memories/{id}/relations`)
+- **Batch API** — save up to 100 memories in a single request (`POST /save/batch`)
+- **TTL (Time-to-Live)** — set `ttl_hours` on save for auto-expiring memories. Expired memories filtered from search, timeline, export. Manual cleanup via `POST /cleanup`, automatic cleanup integrated into decay pass
+- **Export / Import** — full JSON backup of active memories (`GET /export`, `POST /import`). Expired memories excluded from export. Import skips invalid records gracefully
+- **Pagination** — `offset` + `has_more` on `/search` and `/timeline` endpoints
+- **Centralized config** — all env vars in `src/config.py` (9 configurable options)
+- **Vector index cache** — in-memory embedding cache with per-agent invalidation for faster semantic search
+- **OOM protection** — embedding input capped at `KORE_MAX_EMBED_CHARS` (default 8000)
+- **Concurrency locks** — non-blocking threading locks for decay and compression passes
+
+### 🗄️ Database
+- Added `memory_tags` table (memory_id, tag) with tag index
+- Added `memory_relations` table (source_id, target_id, relation) with bidirectional indexes
+- Added `expires_at` column to memories table with migration for existing DBs
+
+### 🧪 Testing
+- Test suite expanded from 17 to **49 tests** covering all P3 features
+- Tests for: batch API, tags (7), relations (5), TTL/cleanup (8), export/import (5), pagination (3)
+- Rate limiter reset in `setup_method` to prevent 429 interference between test classes
+
+### 📚 Documentation
+- README rewritten: comparison table (+5 features), key features (+5 sections), complete API reference organized by category, MCP Server section with Claude/Cursor config, full env var documentation, updated roadmap
+
+### 📦 Installation
+- New optional dependency group: `mcp` (`pip install kore-memory[mcp]`)
+- New entry point: `kore-mcp` for MCP server
+
+---
+
 ## [0.4.0] - 2026-02-20
 
 ### 🔐 Security
@@ -79,6 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Naming
 
+- **0.5.x** — MCP, tags, relations, TTL, batch API
 - **0.4.x** — Security & stability improvements
 - **0.3.x** — Semantic search & compression
 - **0.2.x** — Internal testing (not released)
@@ -86,6 +121,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.5.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/auriti-web-design/kore-memory/releases/tag/v0.3.0
