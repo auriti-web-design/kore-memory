@@ -410,6 +410,97 @@ Add to your `.claude/settings.json` or MCP config:
 
 ---
 
+## 🐍 Python SDK
+
+Kore ships with a built-in Python client SDK — type-safe, zero dependencies beyond `httpx`, supports both sync and async.
+
+```bash
+pip install kore-memory
+```
+
+### Sync
+
+```python
+from src.client import KoreClient
+
+with KoreClient("http://localhost:8765", agent_id="my-agent") as kore:
+    # Save
+    result = kore.save("User prefers dark mode", category="preference")
+    print(result.id, result.importance)
+
+    # Search
+    results = kore.search("dark mode", limit=5)
+    for mem in results.results:
+        print(mem.content, mem.decay_score)
+
+    # Tags
+    kore.add_tags(result.id, ["ui", "preference"])
+    kore.search_by_tag("ui")
+
+    # Relations
+    other = kore.save("Use Tailwind for styling", category="decision")
+    kore.add_relation(result.id, other.id, "related")
+
+    # Maintenance
+    kore.decay_run()
+    kore.compress()
+    kore.cleanup()
+
+    # Export
+    backup = kore.export_memories()
+```
+
+### Async
+
+```python
+from src.client import AsyncKoreClient
+
+async with AsyncKoreClient("http://localhost:8765", agent_id="my-agent") as kore:
+    result = await kore.save("Async memory", category="project")
+    results = await kore.search("async", limit=5)
+    await kore.decay_run()
+```
+
+### Error Handling
+
+```python
+from src.client import KoreClient, KoreValidationError, KoreRateLimitError
+
+with KoreClient() as kore:
+    try:
+        kore.save("ab")  # too short
+    except KoreValidationError as e:
+        print(f"Validation error: {e.detail}")
+    except KoreRateLimitError:
+        print("Slow down!")
+```
+
+**Exception hierarchy:** `KoreError` → `KoreAuthError` | `KoreNotFoundError` | `KoreValidationError` | `KoreRateLimitError` | `KoreServerError`
+
+### SDK Methods
+
+| Method | Description |
+|---|---|
+| `save(content, category, importance, ttl_hours)` | Save a memory |
+| `save_batch(memories)` | Batch save (up to 100) |
+| `search(q, limit, offset, category, semantic)` | Semantic or FTS search |
+| `timeline(subject, limit, offset)` | Chronological history |
+| `delete(memory_id)` | Delete a memory |
+| `add_tags(memory_id, tags)` | Add tags |
+| `get_tags(memory_id)` | Get tags |
+| `remove_tags(memory_id, tags)` | Remove tags |
+| `search_by_tag(tag, limit)` | Search by tag |
+| `add_relation(memory_id, target_id, relation)` | Create relation |
+| `get_relations(memory_id)` | Get relations |
+| `decay_run()` | Run decay pass |
+| `compress()` | Merge similar memories |
+| `cleanup()` | Remove expired memories |
+| `export_memories()` | Export all memories |
+| `import_memories(memories)` | Import memories |
+| `health()` | Health check |
+
+---
+
 ## 🔐 Security
 
 - **API key** — auto-generated on first run, saved as `data/.api_key` (chmod 600)
@@ -446,7 +537,8 @@ Add to your `.claude/settings.json` or MCP config:
 - [x] Centralized config (env vars)
 - [x] OOM protection (embedder)
 - [x] Vector index cache
-- [ ] npm / Python client SDK
+- [x] Python client SDK (sync + async)
+- [ ] npm client SDK
 - [ ] Web dashboard (localhost UI)
 - [ ] PostgreSQL backend
 - [ ] Embeddings v2 (multilingual-e5-large)
