@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.2] - 2026-02-20
+
+### 🔧 Fixed
+- **Public exports** — `KoreClient`, `AsyncKoreClient`, e tutte le eccezioni ora esportati da `src/__init__.py` (`from src import KoreClient`)
+- **README imports** — aggiornati tutti gli esempi da `from src.client import` a `from src import`
+
+---
+
 ## [0.5.1] - 2026-02-20
 
 ### ✨ Added
@@ -139,6 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.5.2]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.3.1...v0.4.0
