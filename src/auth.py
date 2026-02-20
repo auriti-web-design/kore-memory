@@ -4,7 +4,7 @@ API key validation + agent namespace isolation.
 
 Config via environment variables:
   KORE_API_KEY   — master key (required in non-local mode)
-  KORE_LOCAL_ONLY — if "1", skip auth for 127.0.0.1 requests (default: "1")
+  KORE_LOCAL_ONLY — if "1", skip auth for 127.0.0.1 requests (default: "0")
 """
 
 import os
@@ -57,7 +57,8 @@ def _is_local(request: Request) -> bool:
 
 
 def _local_only_mode() -> bool:
-    return os.getenv("KORE_LOCAL_ONLY", "1") == "1"
+    mode = os.getenv("KORE_LOCAL_ONLY", "0") == "1"
+    return mode
 
 
 # ── FastAPI dependency ────────────────────────────────────────────────────────
