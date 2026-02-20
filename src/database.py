@@ -3,19 +3,26 @@ Kore - Database layer
 Handles SQLite connection and schema initialization.
 """
 
+import os
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
-DB_PATH = Path(__file__).parent.parent / "data" / "memory.db"
+_DEFAULT_DB_PATH = str(Path(__file__).parent.parent / "data" / "memory.db")
+
+
+def _get_db_path() -> Path:
+    """Risolve il path del DB a runtime (supporta override via KORE_DB_PATH)."""
+    return Path(os.getenv("KORE_DB_PATH", _DEFAULT_DB_PATH))
 
 
 def init_db() -> None:
     """Initialize the database and create tables if they don't exist."""
-    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    db_path = _get_db_path()
+    db_path.parent.mkdir(parents=True, exist_ok=True)
     # Ensure DB file exists before chmod
-    DB_PATH.touch(exist_ok=True)
-    DB_PATH.chmod(0o600)  # owner only — protects memory data
+    db_path.touch(exist_ok=True)
+    db_path.chmod(0o600)  # owner only — protects memory data
 
     with get_connection() as conn:
         conn.executescript("""
@@ -70,7 +77,7 @@ def init_db() -> None:
 @contextmanager
 def get_connection():
     """Yield a thread-safe SQLite connection with WAL mode enabled."""
-    conn = sqlite3.connect(DB_PATH, check_same_thread=False)
+    conn = sqlite3.connect(_get_db_path(), check_same_thread=False)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA journal_mode=WAL")
     conn.execute("PRAGMA foreign_keys=ON")
