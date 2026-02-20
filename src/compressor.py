@@ -17,9 +17,9 @@ from dataclasses import dataclass
 from .database import get_connection
 from .embedder import cosine_similarity, deserialize, embed, serialize
 from .models import MemorySaveRequest
-from .repository import save_memory
+from .repository import _compress_lock, save_memory
 
-SIMILARITY_THRESHOLD = 0.88  # memories above this are considered duplicates
+SIMILARITY_THRESHOLD = 0.88  # memorie sopra questa soglia sono considerate duplicati
 
 
 @dataclass
@@ -31,9 +31,19 @@ class CompressionResult:
 
 def run_compression(agent_id: str = "default") -> CompressionResult:
     """
-    Full compression pass: find similar memories, merge clusters.
-    Returns a summary of what was done.
+    Compressione completa: trova memorie simili e le unisce.
+    Thread-safe: un solo run alla volta.
     """
+    if not _compress_lock.acquire(blocking=False):
+        return CompressionResult(0, 0, 0)  # run già in corso
+
+    try:
+        return _run_compression_inner(agent_id)
+    finally:
+        _compress_lock.release()
+
+
+def _run_compression_inner(agent_id: str = "default") -> CompressionResult:
     memories = _load_compressible_memories(agent_id)
     if len(memories) < 2:
         return CompressionResult(0, 0, 0)
@@ -133,9 +143,9 @@ def _merge_cluster(cluster: list[dict], agent_id: str = "default") -> int | None
         category=merged_category,
         importance=merged_importance,
     )
-    new_id = save_memory(req, agent_id=agent_id)
+    new_id, _ = save_memory(req, agent_id=agent_id)
 
-    # Mark originals as compressed
+    # Segna gli originali come compressi
     ids = [m["id"] for m in cluster]
     with get_connection() as conn:
         conn.executemany(

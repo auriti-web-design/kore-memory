@@ -3,6 +3,7 @@ Kore — Repository layer
 All database operations, keeping business logic out of routes.
 """
 
+import threading
 from datetime import datetime, timezone
 
 from .database import get_connection
@@ -11,6 +12,10 @@ from .models import MemoryRecord, MemorySaveRequest
 from .scorer import auto_score
 
 _EMBEDDINGS_AVAILABLE: bool | None = None
+
+# Lock per operazioni di manutenzione — previene run concorrenti
+_decay_lock = threading.Lock()
+_compress_lock = threading.Lock()
 
 
 def _embeddings_available() -> bool:
@@ -57,7 +62,14 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
                 "embedding": embedding_blob,
             },
         )
-        return cursor.lastrowid, importance
+        row_id = cursor.lastrowid
+
+    # Invalida cache vettoriale per l'agente
+    if embedding_blob:
+        from .vector_index import get_index
+        get_index().invalidate(agent_id)
+
+    return row_id, importance
 
 
 def search_memories(
@@ -90,20 +102,36 @@ def search_memories(
 
 
 def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
-    """Delete a memory by id, scoped to agent. Returns True if deleted."""
+    """Elimina una memoria per id, scoped per agente. Restituisce True se eliminata."""
     with get_connection() as conn:
         cursor = conn.execute(
             "DELETE FROM memories WHERE id = ? AND agent_id = ?",
             (memory_id, agent_id),
         )
-        return cursor.rowcount > 0
+        deleted = cursor.rowcount > 0
+
+    if deleted:
+        from .vector_index import get_index
+        get_index().invalidate(agent_id)
+
+    return deleted
 
 
 def run_decay_pass(agent_id: str | None = None) -> int:
     """
     Recalculate decay_score for all active memories (optionally scoped to agent).
-    Returns the count of memories updated.
+    Returns the count of memories updated. Thread-safe: un solo run alla volta.
     """
+    if not _decay_lock.acquire(blocking=False):
+        return 0  # run già in corso — skip silenzioso
+
+    try:
+        return _run_decay_pass_inner(agent_id)
+    finally:
+        _decay_lock.release()
+
+
+def _run_decay_pass_inner(agent_id: str | None = None) -> int:
     with get_connection() as conn:
         sql = "SELECT id, importance, created_at, last_accessed, access_count FROM memories WHERE compressed_into IS NULL"
         params: list = []
@@ -210,37 +238,46 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
 
 
 def _semantic_search(query: str, limit: int, category: str | None, agent_id: str = "default") -> list[MemoryRecord]:
-    """Cosine similarity search over stored embeddings, scoped to agent."""
-    from .embedder import cosine_similarity, deserialize, embed
+    """Ricerca semantica con indice vettoriale in-memory, scoped per agente."""
+    from .embedder import embed
+    from .vector_index import get_index
 
     query_vec = embed(query)
+    index = get_index()
+
+    # Ricerca vettoriale batch via indice in-memory
+    top_ids = index.search(query_vec, agent_id, category=category, limit=limit)
+    if not top_ids:
+        return []
+
+    # Carica i record completi dal DB
+    id_score_map = {mem_id: score for mem_id, score in top_ids}
+    placeholders = ",".join("?" for _ in top_ids)
 
     with get_connection() as conn:
-        sql = """
+        sql = f"""
             SELECT id, content, category, importance,
                    decay_score, access_count, last_accessed,
-                   embedding, created_at, updated_at
+                   created_at, updated_at
             FROM memories
-            WHERE embedding IS NOT NULL
-              AND compressed_into IS NULL
-              AND agent_id = ?
+            WHERE id IN ({placeholders})
         """
-        params: list = [agent_id]
+        params: list = [mem_id for mem_id, _ in top_ids]
         if category:
-            sql += " AND category = ?"
+            sql = f"""
+                SELECT id, content, category, importance,
+                       decay_score, access_count, last_accessed,
+                       created_at, updated_at
+                FROM memories
+                WHERE id IN ({placeholders}) AND category = ?
+            """
             params.append(category)
         rows = conn.execute(sql, params).fetchall()
 
-    scored = []
+    results = []
     for row in rows:
-        vec = deserialize(row["embedding"])
-        sim = cosine_similarity(query_vec, vec)
-        scored.append((sim, row))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-
-    return [
-        MemoryRecord(
+        sim = id_score_map.get(row["id"], 0.0)
+        results.append(MemoryRecord(
             id=row["id"],
             content=row["content"],
             category=row["category"],
@@ -249,9 +286,11 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
             created_at=row["created_at"],
             updated_at=row["updated_at"],
             score=round(sim, 4),
-        )
-        for sim, row in scored[:limit]
-    ]
+        ))
+
+    # Ordina per score decrescente
+    results.sort(key=lambda r: r.score or 0.0, reverse=True)
+    return results
 
 
 def _sanitize_fts_query(query: str) -> str:

@@ -15,25 +15,36 @@ if TYPE_CHECKING:
 
 MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 
+# Limite massimo caratteri per embedding — previene OOM su testi lunghi
+MAX_EMBED_CHARS = 8_000
+
 
 @lru_cache(maxsize=1)
 def get_model() -> "SentenceTransformer":
-    """Load model once and cache it in memory."""
+    """Carica il modello una volta e lo tiene in cache."""
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer(MODEL_NAME)
 
 
+def _truncate(text: str, max_chars: int = MAX_EMBED_CHARS) -> str:
+    """Tronca il testo al limite massimo per evitare OOM."""
+    if len(text) <= max_chars:
+        return text
+    return text[:max_chars]
+
+
 def embed(text: str) -> list[float]:
-    """Return embedding vector for a single text."""
+    """Restituisce il vettore embedding per un singolo testo."""
     model = get_model()
-    vector = model.encode(text, normalize_embeddings=True)
+    vector = model.encode(_truncate(text), normalize_embeddings=True)
     return vector.tolist()
 
 
 def embed_batch(texts: list[str]) -> list[list[float]]:
-    """Return embedding vectors for a list of texts."""
+    """Restituisce i vettori embedding per una lista di testi."""
     model = get_model()
-    vectors = model.encode(texts, normalize_embeddings=True, batch_size=32)
+    truncated = [_truncate(t) for t in texts]
+    vectors = model.encode(truncated, normalize_embeddings=True, batch_size=32)
     return [v.tolist() for v in vectors]
 
 
