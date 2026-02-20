@@ -10,10 +10,10 @@ Remembers what matters. Forgets what doesn't. Never calls home.
 
 <br/>
 
+[![CI](https://github.com/auriti-web-design/kore-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/auriti-web-design/kore-memory/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/kore-memory.svg?style=flat-square&color=7c3aed)](https://pypi.org/project/kore-memory/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen?style=flat-square)]()
 [![Zero Cloud](https://img.shields.io/badge/cloud-zero-orange?style=flat-square)]()
 [![Multilingual](https://img.shields.io/badge/languages-50%2B-purple?style=flat-square)]()
 
