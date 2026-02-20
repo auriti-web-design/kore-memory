@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Pagination** — `offset` + `has_more` on `/search` and `/timeline` endpoints
 - **Centralized config** — all env vars in `src/config.py` (9 configurable options)
 - **Vector index cache** — in-memory embedding cache with per-agent invalidation for faster semantic search
+- **Python SDK** — `KoreClient` (sync) and `AsyncKoreClient` (async) with type-safe wrappers for all 17 API endpoints. Typed exceptions (`KoreAuthError`, `KoreNotFoundError`, `KoreValidationError`, `KoreRateLimitError`, `KoreServerError`). Context manager support (`with` / `async with`). Returns Pydantic models, zero duplication
 - **OOM protection** — embedding input capped at `KORE_MAX_EMBED_CHARS` (default 8000)
 - **Concurrency locks** — non-blocking threading locks for decay and compression passes
 
@@ -28,12 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added `expires_at` column to memories table with migration for existing DBs
 
 ### 🧪 Testing
-- Test suite expanded from 17 to **49 tests** covering all P3 features
+- Test suite expanded from 17 to **84 tests** covering all P3 features + SDK
 - Tests for: batch API, tags (7), relations (5), TTL/cleanup (8), export/import (5), pagination (3)
+- SDK tests: 15 unit (helpers, exceptions, class structure) + 20 integration (all endpoints via ASGI transport)
 - Rate limiter reset in `setup_method` to prevent 429 interference between test classes
 
 ### 📚 Documentation
-- README rewritten: comparison table (+5 features), key features (+5 sections), complete API reference organized by category, MCP Server section with Claude/Cursor config, full env var documentation, updated roadmap
+- README rewritten: comparison table (+5 features), key features (+5 sections), complete API reference organized by category, MCP Server section with Claude/Cursor config, Python SDK section with sync/async examples, full env var documentation, updated roadmap
 
 ### 📦 Installation
 - New optional dependency group: `mcp` (`pip install kore-memory[mcp]`)
@@ -113,7 +115,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Naming
 
-- **0.5.x** — MCP, tags, relations, TTL, batch API
+- **0.5.x** — MCP, tags, relations, TTL, batch API, Python SDK
 - **0.4.x** — Security & stability improvements
 - **0.3.x** — Semantic search & compression
 - **0.2.x** — Internal testing (not released)
