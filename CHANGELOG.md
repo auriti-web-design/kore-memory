@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.1] - 2026-02-20
+
+### ✨ Added
+- **Python SDK** — `KoreClient` (sync) and `AsyncKoreClient` (async) with type-safe wrappers for all 17 API endpoints. Typed exceptions (`KoreAuthError`, `KoreNotFoundError`, `KoreValidationError`, `KoreRateLimitError`, `KoreServerError`). Context manager support (`with` / `async with`). Returns Pydantic models, zero duplication (`src/client.py`)
+
+### 🧪 Testing
+- 35 new SDK tests (15 unit + 20 integration via ASGI transport)
+- Total test suite: **84 tests** ✅
+
+### 📚 Documentation
+- README: added Python SDK section with sync/async examples, error handling, and methods table
+- CHANGELOG: updated with SDK details
+- Roadmap: Python SDK marked as complete
+
+---
+
 ## [0.5.0] - 2026-02-20
 
 ### ✨ Added
@@ -123,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.5.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.3.0...v0.3.1
