@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.3] - 2026-02-20
+
+### ✨ Added
+- **Web Dashboard** — dashboard completa servita da FastAPI su `/dashboard`. HTML inline con CSS + JS vanilla, zero dipendenze extra. 7 sezioni: Overview, Memories, Tags, Relations, Timeline, Maintenance, Backup. Dark theme, responsive, agent selector
+- **CSP dinamico** — Content Security Policy allargato solo per `/dashboard` (inline styles/scripts + Google Fonts), restrittivo per tutte le API
+
+### 🧪 Testing
+- 7 nuovi test dashboard (route, sezioni, CSP, branding, JS helpers)
+- Total test suite: **91 tests** ✅
+
+### 📚 Documentation
+- README: aggiunta sezione Web Dashboard con tabella feature, aggiornata roadmap (dashboard completata), aggiunto `/dashboard` alla API reference
+
+---
+
 ## [0.5.2] - 2026-02-20
 
 ### 🔧 Fixed
@@ -147,6 +162,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.5.3]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.4.0...v0.5.0

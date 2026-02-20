@@ -9,12 +9,13 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from . import config
 from .auth import get_agent_id, require_auth
+from .dashboard import get_dashboard_html
 from .database import init_db
 from .models import (
     BatchSaveRequest,
@@ -77,13 +78,29 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
 # ── Security headers middleware ──────────────────────────────────────────────
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    # CSP allargato per la dashboard (inline styles/scripts + fetch verso le API)
+    _DASHBOARD_CSP = (
+        "default-src 'self'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "script-src 'self' 'unsafe-inline'; "
+        "connect-src 'self'; "
+        "img-src 'self' data:; "
+        "frame-ancestors 'none'"
+    )
+    _API_CSP = "default-src 'none'; frame-ancestors 'none'"
+
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none'"
+        # CSP allargato solo per la dashboard, restrittivo per le API
+        if request.url.path == "/dashboard":
+            response.headers["Content-Security-Policy"] = self._DASHBOARD_CSP
+        else:
+            response.headers["Content-Security-Policy"] = self._API_CSP
         return response
 
 
@@ -355,6 +372,14 @@ def import_data(
     """Importa memorie da un export precedente."""
     count = import_memories(req.memories, agent_id=agent_id)
     return MemoryImportResponse(imported=count)
+
+
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
+@app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
+async def dashboard() -> HTMLResponse:
+    """Dashboard web per gestione memorie su localhost."""
+    return HTMLResponse(content=get_dashboard_html())
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────

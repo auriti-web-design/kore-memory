@@ -49,4 +49,4 @@ SIMILARITY_THRESHOLD = float(os.getenv("KORE_SIMILARITY_THRESHOLD", "0.88"))
 
 # ── Versione ──────────────────────────────────────────────────────────────────
 
-VERSION = "0.5.2"
+VERSION = "0.5.3"

@@ -306,6 +306,7 @@ Each retrieval extends the half-life by **+15%** (spaced repetition effect).
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/health` | Health check + capabilities |
+| `GET` | `/dashboard` | Web dashboard (HTML, no auth required) |
 
 Interactive docs: **http://localhost:8765/docs**
 
@@ -407,6 +408,37 @@ Add to your `.claude/settings.json` or MCP config:
   }
 }
 ```
+
+---
+
+## 📊 Web Dashboard
+
+Kore includes a built-in web dashboard served directly from FastAPI — no build step, no npm, no extra dependencies.
+
+```bash
+# Start Kore
+kore
+
+# Open in browser
+open http://localhost:8765/dashboard
+```
+
+### Features
+
+| Tab | Description |
+|---|---|
+| **Overview** | Health status, total memories, categories breakdown |
+| **Memories** | Search (FTS + semantic), save, delete, pagination |
+| **Tags** | Search by tag, add/remove/list tags on any memory |
+| **Relations** | View and create memory relations (knowledge graph) |
+| **Timeline** | Chronological trace for any subject |
+| **Maintenance** | Run decay, compress, and cleanup with one click |
+| **Backup** | Export as JSON download, import from file |
+
+- Dark theme with Kore purple accents
+- Responsive (mobile-friendly with bottom nav)
+- Agent selector in header — switch agent context instantly
+- All interactions via the same REST API (no separate backend)
 
 ---
 
@@ -539,7 +571,7 @@ with KoreClient() as kore:
 - [x] Vector index cache
 - [x] Python client SDK (sync + async)
 - [ ] npm client SDK
-- [ ] Web dashboard (localhost UI)
+- [x] Web dashboard (localhost UI)
 - [ ] PostgreSQL backend
 - [ ] Embeddings v2 (multilingual-e5-large)
 
