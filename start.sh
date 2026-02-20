@@ -25,11 +25,22 @@ fi
 fuser -k 8765/tcp 2>/dev/null || true
 sleep 1
 
-nohup "$DIR/.venv/bin/kore" \
-    --host 127.0.0.1 \
-    --port 8765 \
-    --log-level warning \
-    > "$DIR/logs/server.log" 2>&1 &
+# Load .env and start server in one command (preserves env vars in nohup)
+if [ -f "$DIR/.env" ]; then
+    # shellcheck disable=SC2046
+    nohup env $(grep -v '^#' "$DIR/.env" | xargs) \
+        "$DIR/.venv/bin/kore" \
+        --host 127.0.0.1 \
+        --port 8765 \
+        --log-level warning \
+        > "$DIR/logs/server.log" 2>&1 &
+else
+    nohup "$DIR/.venv/bin/kore" \
+        --host 127.0.0.1 \
+        --port 8765 \
+        --log-level warning \
+        > "$DIR/logs/server.log" 2>&1 &
+fi
 
 echo $! > "$PID_FILE"
 echo "Kore started (pid $!)"
