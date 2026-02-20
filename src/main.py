@@ -3,7 +3,6 @@ Kore — FastAPI application
 Memory layer with decay, auto-scoring, compression, semantic search, and auth.
 """
 
-import os
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -14,18 +13,24 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
+from . import config
 from .auth import get_agent_id, require_auth
 from .database import init_db
 from .models import (
     CompressRunResponse,
     DecayRunResponse,
+    MemoryExportResponse,
+    MemoryImportRequest,
+    MemoryImportResponse,
     MemorySaveRequest,
     MemorySaveResponse,
     MemorySearchResponse,
 )
 from .repository import (
     delete_memory,
+    export_memories,
     get_timeline,
+    import_memories,
     run_decay_pass,
     save_memory,
     search_memories,
@@ -36,19 +41,10 @@ from .repository import (
 
 _rate_buckets: dict[str, list[float]] = defaultdict(list)
 
-# Limiti per endpoint (richieste / finestra in secondi)
-_RATE_LIMITS: dict[str, tuple[int, int]] = {
-    "/save": (30, 60),         # 30 req/min
-    "/search": (60, 60),       # 60 req/min
-    "/timeline": (60, 60),     # 60 req/min
-    "/decay/run": (5, 3600),   # 5 req/ora
-    "/compress": (2, 3600),    # 2 req/ora
-}
-
 
 def _check_rate_limit(client_ip: str, path: str) -> None:
     """Controlla rate limit per IP + path. Lancia HTTPException 429 se superato."""
-    limit_conf = _RATE_LIMITS.get(path)
+    limit_conf = config.RATE_LIMITS.get(path)
     if not limit_conf:
         return
     max_requests, window = limit_conf
@@ -91,15 +87,14 @@ app = FastAPI(
         "The memory layer that thinks like a human: "
         "remembers what matters, forgets what doesn't, and never calls home."
     ),
-    version="0.4.0",
+    version=config.VERSION,
     lifespan=lifespan,
 )
 
 # CORS — origini configurabili via env, default restrittivo
-_allowed_origins = [o.strip() for o in os.getenv("KORE_CORS_ORIGINS", "").split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_allowed_origins,
+    allow_origins=config.CORS_ORIGINS,
     allow_credentials=False,
     allow_methods=["GET", "POST", "DELETE"],
     allow_headers=["X-Kore-Key", "X-Agent-Id", "Content-Type"],
@@ -141,27 +136,44 @@ def search(
     request: Request,
     q: str = Query(..., min_length=1, description="Search query (any language)"),
     limit: int = Query(5, ge=1, le=20),
+    offset: int = Query(0, ge=0, description="Numero risultati da saltare"),
     category: str | None = Query(None),
     semantic: bool = Query(True),
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemorySearchResponse:
-    """Semantic search scoped to the requesting agent."""
+    """Semantic search scoped to the requesting agent, with pagination."""
     _check_rate_limit(request.client.host if request.client else "unknown", "/search")
-    results = search_memories(query=q, limit=limit, category=category, semantic=semantic, agent_id=agent_id)
-    return MemorySearchResponse(results=results, total=len(results))
+    # Chiedi più risultati per gestire l'offset
+    all_results = search_memories(query=q, limit=limit + offset, category=category, semantic=semantic, agent_id=agent_id)
+    page = all_results[offset:offset + limit]
+    return MemorySearchResponse(
+        results=page,
+        total=len(all_results),
+        offset=offset,
+        has_more=offset + limit < len(all_results),
+    )
 
 
 @app.get("/timeline", response_model=MemorySearchResponse)
 def timeline(
+    request: Request,
     subject: str = Query(..., min_length=1),
     limit: int = Query(20, ge=1, le=50),
+    offset: int = Query(0, ge=0, description="Numero risultati da saltare"),
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemorySearchResponse:
-    """Chronological memory history for a subject, scoped to agent."""
-    results = get_timeline(subject=subject, limit=limit, agent_id=agent_id)
-    return MemorySearchResponse(results=results, total=len(results))
+    """Chronological memory history for a subject, scoped to agent, with pagination."""
+    _check_rate_limit(request.client.host if request.client else "unknown", "/timeline")
+    all_results = get_timeline(subject=subject, limit=limit + offset, agent_id=agent_id)
+    page = all_results[offset:offset + limit]
+    return MemorySearchResponse(
+        results=page,
+        total=len(all_results),
+        offset=offset,
+        has_more=offset + limit < len(all_results),
+    )
 
 
 @app.delete("/memories/{memory_id}", status_code=204)
@@ -204,6 +216,29 @@ def compress(
         memories_merged=result.memories_merged,
         new_records_created=result.new_records_created,
     )
+
+
+# ── Backup / Import ──────────────────────────────────────────────────────────
+
+@app.get("/export", response_model=MemoryExportResponse)
+def export(
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemoryExportResponse:
+    """Esporta tutte le memorie attive dell'agente (senza embedding)."""
+    data = export_memories(agent_id=agent_id)
+    return MemoryExportResponse(memories=data, total=len(data))
+
+
+@app.post("/import", response_model=MemoryImportResponse, status_code=201)
+def import_data(
+    req: MemoryImportRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemoryImportResponse:
+    """Importa memorie da un export precedente."""
+    count = import_memories(req.memories, agent_id=agent_id)
+    return MemoryImportResponse(imported=count)
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────

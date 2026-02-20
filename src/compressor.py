@@ -14,12 +14,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from . import config
 from .database import get_connection
 from .embedder import cosine_similarity, deserialize, embed, serialize
 from .models import MemorySaveRequest
 from .repository import _compress_lock, save_memory
 
-SIMILARITY_THRESHOLD = 0.88  # memorie sopra questa soglia sono considerate duplicati
+SIMILARITY_THRESHOLD = config.SIMILARITY_THRESHOLD
 
 
 @dataclass
@@ -82,24 +83,33 @@ def _load_compressible_memories(agent_id: str = "default") -> list[dict]:
 
 def _find_clusters(memories: list[dict]) -> list[list[dict]]:
     """
-    Greedy clustering: group memories where any pair exceeds threshold.
-    Each memory belongs to at most one cluster.
+    Clustering greedy ottimizzato: deserializza i vettori una sola volta,
+    poi confronta solo le coppie (i, j) con j > i.
+    Complessità: O(n²/2) confronti ma O(n) deserializzazioni.
     """
-    used = set()
-    clusters = []
-
-    for i, mem_a in enumerate(memories):
-        if mem_a["id"] in used:
+    # Pre-deserializza tutti i vettori una sola volta
+    vectors: dict[int, list[float]] = {}
+    for mem in memories:
+        try:
+            vectors[mem["id"]] = deserialize(mem["embedding"])
+        except Exception:
             continue
 
-        vec_a = deserialize(mem_a["embedding"])
+    used: set[int] = set()
+    clusters: list[list[dict]] = []
+
+    for i, mem_a in enumerate(memories):
+        if mem_a["id"] in used or mem_a["id"] not in vectors:
+            continue
+
+        vec_a = vectors[mem_a["id"]]
         cluster = [mem_a]
 
-        for j, mem_b in enumerate(memories):
-            if i == j or mem_b["id"] in used:
+        # Confronta solo con memorie successive (evita doppi confronti)
+        for mem_b in memories[i + 1:]:
+            if mem_b["id"] in used or mem_b["id"] not in vectors:
                 continue
-            vec_b = deserialize(mem_b["embedding"])
-            if cosine_similarity(vec_a, vec_b) >= SIMILARITY_THRESHOLD:
+            if cosine_similarity(vec_a, vectors[mem_b["id"]]) >= SIMILARITY_THRESHOLD:
                 cluster.append(mem_b)
 
         if len(cluster) > 1:

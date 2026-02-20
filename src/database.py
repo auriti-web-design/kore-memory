@@ -8,12 +8,13 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
-_DEFAULT_DB_PATH = str(Path(__file__).parent.parent / "data" / "memory.db")
+from . import config
 
 
 def _get_db_path() -> Path:
     """Risolve il path del DB a runtime (supporta override via KORE_DB_PATH)."""
-    return Path(os.getenv("KORE_DB_PATH", _DEFAULT_DB_PATH))
+    # Controlla env var a runtime per supporto test con DB temporaneo
+    return Path(os.getenv("KORE_DB_PATH", config.DEFAULT_DB_PATH))
 
 
 def init_db() -> None:

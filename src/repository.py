@@ -170,6 +170,44 @@ def get_timeline(subject: str, limit: int = 20, agent_id: str = "default") -> li
     return sorted(results, key=lambda r: r.created_at)
 
 
+def export_memories(agent_id: str = "default") -> list[dict]:
+    """Esporta tutte le memorie attive dell'agente come lista di dict (senza embedding)."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, content, category, importance, decay_score,
+                   access_count, last_accessed, created_at, updated_at
+            FROM memories
+            WHERE agent_id = ? AND compressed_into IS NULL
+            ORDER BY created_at DESC
+            """,
+            (agent_id,),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def import_memories(records: list[dict], agent_id: str = "default") -> int:
+    """Importa memorie da una lista di dict. Restituisce il numero di record importati."""
+    imported = 0
+    for rec in records:
+        content = rec.get("content", "").strip()
+        if not content or len(content) < 3:
+            continue
+        category = rec.get("category", "general")
+        importance = rec.get("importance", 1)
+        importance = max(1, min(5, int(importance)))
+
+        req = MemorySaveRequest(
+            content=content[:4000],
+            category=category,
+            importance=importance,
+        )
+        save_memory(req, agent_id=agent_id)
+        imported += 1
+
+    return imported
+
+
 # ── Private helpers ──────────────────────────────────────────────────────────
 
 def _reinforce(memory_ids: list[int]) -> None:

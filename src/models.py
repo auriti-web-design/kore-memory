@@ -54,6 +54,22 @@ class MemorySaveResponse(BaseModel):
 class MemorySearchResponse(BaseModel):
     results: list[MemoryRecord]
     total: int
+    offset: int = 0
+    has_more: bool = False
+
+
+class MemoryImportRequest(BaseModel):
+    memories: list[dict] = Field(..., min_length=1, max_length=500)
+
+
+class MemoryImportResponse(BaseModel):
+    imported: int
+    message: str = "Import complete"
+
+
+class MemoryExportResponse(BaseModel):
+    memories: list[dict]
+    total: int
 
 
 class DecayRunResponse(BaseModel):

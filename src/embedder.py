@@ -13,10 +13,10 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from sentence_transformers import SentenceTransformer
 
-MODEL_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
+from . import config
 
-# Limite massimo caratteri per embedding — previene OOM su testi lunghi
-MAX_EMBED_CHARS = 8_000
+MODEL_NAME = config.EMBED_MODEL
+MAX_EMBED_CHARS = config.MAX_EMBED_CHARS
 
 
 @lru_cache(maxsize=1)

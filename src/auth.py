@@ -9,11 +9,12 @@ Config via environment variables:
 
 import os
 import secrets
-from pathlib import Path
 
 from fastapi import Header, HTTPException, Request, status
 
-_KEY_FILE = Path(__file__).parent.parent / "data" / ".api_key"
+from . import config
+
+_KEY_FILE = config.API_KEY_FILE
 
 # ── Key management ────────────────────────────────────────────────────────────
 
@@ -57,8 +58,8 @@ def _is_local(request: Request) -> bool:
 
 
 def _local_only_mode() -> bool:
-    mode = os.getenv("KORE_LOCAL_ONLY", "0") == "1"
-    return mode
+    # Controlla env var a runtime per supporto test
+    return os.getenv("KORE_LOCAL_ONLY", "0") == "1"
 
 
 # ── FastAPI dependency ────────────────────────────────────────────────────────
