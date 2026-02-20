@@ -17,6 +17,9 @@ from . import config
 from .auth import get_agent_id, require_auth
 from .database import init_db
 from .models import (
+    BatchSaveRequest,
+    BatchSaveResponse,
+    CleanupExpiredResponse,
     CompressRunResponse,
     DecayRunResponse,
     MemoryExportResponse,
@@ -25,14 +28,25 @@ from .models import (
     MemorySaveRequest,
     MemorySaveResponse,
     MemorySearchResponse,
+    RelationRequest,
+    RelationResponse,
+    TagRequest,
+    TagResponse,
 )
 from .repository import (
+    add_relation,
+    add_tags,
+    cleanup_expired,
     delete_memory,
     export_memories,
+    get_relations,
+    get_tags,
     get_timeline,
     import_memories,
+    remove_tags,
     run_decay_pass,
     save_memory,
+    search_by_tag,
     search_memories,
 )
 
@@ -131,6 +145,22 @@ def save(
     return MemorySaveResponse(id=memory_id, importance=importance)
 
 
+@app.post("/save/batch", response_model=BatchSaveResponse, status_code=201)
+def save_batch(
+    request: Request,
+    req: BatchSaveRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> BatchSaveResponse:
+    """Salva più memorie in una sola richiesta (max 100)."""
+    _check_rate_limit(request.client.host if request.client else "unknown", "/save")
+    saved = []
+    for mem in req.memories:
+        memory_id, importance = save_memory(mem, agent_id=agent_id)
+        saved.append(MemorySaveResponse(id=memory_id, importance=importance))
+    return BatchSaveResponse(saved=saved, total=len(saved))
+
+
 @app.get("/search", response_model=MemorySearchResponse)
 def search(
     request: Request,
@@ -187,6 +217,82 @@ def delete(
         raise HTTPException(status_code=404, detail="Memory not found")
 
 
+# ── Tag endpoints ─────────────────────────────────────────────────────────────
+
+@app.post("/memories/{memory_id}/tags", response_model=TagResponse, status_code=201)
+def tag_add(
+    memory_id: int,
+    req: TagRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> TagResponse:
+    """Aggiunge tag a una memoria."""
+    count = add_tags(memory_id, req.tags, agent_id=agent_id)
+    tags = get_tags(memory_id)
+    return TagResponse(count=count, tags=tags)
+
+
+@app.delete("/memories/{memory_id}/tags", response_model=TagResponse)
+def tag_remove(
+    memory_id: int,
+    req: TagRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> TagResponse:
+    """Rimuove tag da una memoria."""
+    remove_tags(memory_id, req.tags, agent_id=agent_id)
+    tags = get_tags(memory_id)
+    return TagResponse(count=len(tags), tags=tags)
+
+
+@app.get("/memories/{memory_id}/tags", response_model=TagResponse)
+def tag_list(
+    memory_id: int,
+    _: str = _Auth,
+) -> TagResponse:
+    """Restituisce i tag di una memoria."""
+    tags = get_tags(memory_id)
+    return TagResponse(count=len(tags), tags=tags)
+
+
+@app.get("/tags/{tag}/memories", response_model=MemorySearchResponse)
+def tag_search(
+    tag: str,
+    limit: int = Query(20, ge=1, le=50),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemorySearchResponse:
+    """Cerca memorie per tag."""
+    results = search_by_tag(tag, agent_id=agent_id, limit=limit)
+    return MemorySearchResponse(results=results, total=len(results))
+
+
+# ── Relation endpoints ───────────────────────────────────────────────────────
+
+@app.post("/memories/{memory_id}/relations", response_model=RelationResponse, status_code=201)
+def relation_add(
+    memory_id: int,
+    req: RelationRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> RelationResponse:
+    """Crea una relazione tra due memorie."""
+    add_relation(memory_id, req.target_id, req.relation, agent_id=agent_id)
+    relations = get_relations(memory_id, agent_id=agent_id)
+    return RelationResponse(relations=relations, total=len(relations))
+
+
+@app.get("/memories/{memory_id}/relations", response_model=RelationResponse)
+def relation_list(
+    memory_id: int,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> RelationResponse:
+    """Restituisce le relazioni di una memoria."""
+    relations = get_relations(memory_id, agent_id=agent_id)
+    return RelationResponse(relations=relations, total=len(relations))
+
+
 # ── Maintenance endpoints ─────────────────────────────────────────────────────
 
 @app.post("/decay/run", response_model=DecayRunResponse)
@@ -216,6 +322,16 @@ def compress(
         memories_merged=result.memories_merged,
         new_records_created=result.new_records_created,
     )
+
+
+@app.post("/cleanup", response_model=CleanupExpiredResponse)
+def cleanup(
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> CleanupExpiredResponse:
+    """Remove expired memories (TTL scaduto) for this agent."""
+    removed = cleanup_expired(agent_id=agent_id)
+    return CleanupExpiredResponse(removed=removed)
 
 
 # ── Backup / Import ──────────────────────────────────────────────────────────

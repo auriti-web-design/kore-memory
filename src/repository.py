@@ -4,7 +4,7 @@ All database operations, keeping business logic out of routes.
 """
 
 import threading
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from .database import get_connection
 from .decay import compute_decay, effective_score, should_forget
@@ -48,11 +48,16 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
             # Embedding fallito — salva comunque senza embedding
             embedding_blob = None
 
+    # Calcola expires_at se TTL specificato
+    expires_at = None
+    if req.ttl_hours:
+        expires_at = (datetime.now(timezone.utc) + timedelta(hours=req.ttl_hours)).isoformat()
+
     with get_connection() as conn:
         cursor = conn.execute(
             """
-            INSERT INTO memories (agent_id, content, category, importance, embedding)
-            VALUES (:agent_id, :content, :category, :importance, :embedding)
+            INSERT INTO memories (agent_id, content, category, importance, embedding, expires_at)
+            VALUES (:agent_id, :content, :category, :importance, :embedding, :expires_at)
             """,
             {
                 "agent_id": agent_id,
@@ -60,6 +65,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
                 "category": req.category,
                 "importance": importance,
                 "embedding": embedding_blob,
+                "expires_at": expires_at,
             },
         )
         row_id = cursor.lastrowid
@@ -117,15 +123,30 @@ def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
     return deleted
 
 
+def cleanup_expired(agent_id: str | None = None) -> int:
+    """Elimina memorie con TTL scaduto. Restituisce il numero di record rimossi."""
+    with get_connection() as conn:
+        sql = "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')"
+        params: list = []
+        if agent_id:
+            sql += " AND agent_id = ?"
+            params.append(agent_id)
+        cursor = conn.execute(sql, params)
+        return cursor.rowcount
+
+
 def run_decay_pass(agent_id: str | None = None) -> int:
     """
     Recalculate decay_score for all active memories (optionally scoped to agent).
+    Pulisce anche le memorie con TTL scaduto.
     Returns the count of memories updated. Thread-safe: un solo run alla volta.
     """
     if not _decay_lock.acquire(blocking=False):
         return 0  # run già in corso — skip silenzioso
 
     try:
+        # Pulizia memorie scadute prima del ricalcolo
+        cleanup_expired(agent_id)
         return _run_decay_pass_inner(agent_id)
     finally:
         _decay_lock.release()
@@ -179,6 +200,7 @@ def export_memories(agent_id: str = "default") -> list[dict]:
                    access_count, last_accessed, created_at, updated_at
             FROM memories
             WHERE agent_id = ? AND compressed_into IS NULL
+              AND (expires_at IS NULL OR expires_at > datetime('now'))
             ORDER BY created_at DESC
             """,
             (agent_id,),
@@ -206,6 +228,129 @@ def import_memories(records: list[dict], agent_id: str = "default") -> int:
         imported += 1
 
     return imported
+
+
+# ── Tag ──────────────────────────────────────────────────────────────────────
+
+def add_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
+    """Aggiunge tag a una memoria. Restituisce il numero di tag aggiunti."""
+    # Verifica che la memoria appartenga all'agente
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id FROM memories WHERE id = ? AND agent_id = ?",
+            (memory_id, agent_id),
+        ).fetchone()
+        if not row:
+            return 0
+        added = 0
+        for tag in tags:
+            tag = tag.strip().lower()[:100]
+            if not tag:
+                continue
+            try:
+                conn.execute(
+                    "INSERT OR IGNORE INTO memory_tags (memory_id, tag) VALUES (?, ?)",
+                    (memory_id, tag),
+                )
+                added += 1
+            except Exception:
+                continue
+    return added
+
+
+def remove_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
+    """Rimuove tag da una memoria. Restituisce il numero di tag rimossi."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT id FROM memories WHERE id = ? AND agent_id = ?",
+            (memory_id, agent_id),
+        ).fetchone()
+        if not row:
+            return 0
+        removed = 0
+        for tag in tags:
+            tag = tag.strip().lower()
+            cursor = conn.execute(
+                "DELETE FROM memory_tags WHERE memory_id = ? AND tag = ?",
+                (memory_id, tag),
+            )
+            removed += cursor.rowcount
+    return removed
+
+
+def get_tags(memory_id: int) -> list[str]:
+    """Restituisce i tag di una memoria."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT tag FROM memory_tags WHERE memory_id = ? ORDER BY tag",
+            (memory_id,),
+        ).fetchall()
+    return [r["tag"] for r in rows]
+
+
+def search_by_tag(tag: str, agent_id: str = "default", limit: int = 20) -> list[MemoryRecord]:
+    """Cerca memorie per tag."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT m.id, m.content, m.category, m.importance,
+                   m.decay_score, m.access_count, m.last_accessed,
+                   m.created_at, m.updated_at, NULL AS score
+            FROM memories m
+            JOIN memory_tags t ON m.id = t.memory_id
+            WHERE t.tag = ? AND m.agent_id = ? AND m.compressed_into IS NULL
+              AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
+            ORDER BY m.importance DESC, m.created_at DESC
+            LIMIT ?
+            """,
+            (tag.strip().lower(), agent_id, limit),
+        ).fetchall()
+    return [_row_to_record(r) for r in rows]
+
+
+# ── Relazioni ────────────────────────────────────────────────────────────────
+
+def add_relation(
+    source_id: int, target_id: int, relation: str = "related", agent_id: str = "default"
+) -> bool:
+    """Crea una relazione tra due memorie. Entrambe devono appartenere all'agente."""
+    with get_connection() as conn:
+        # Verifica che entrambe le memorie appartengano all'agente
+        count = conn.execute(
+            "SELECT COUNT(*) FROM memories WHERE id IN (?, ?) AND agent_id = ?",
+            (source_id, target_id, agent_id),
+        ).fetchone()[0]
+        if count < 2:
+            return False
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO memory_relations (source_id, target_id, relation)
+                   VALUES (?, ?, ?)""",
+                (source_id, target_id, relation.strip().lower()[:100]),
+            )
+            return True
+        except Exception:
+            return False
+
+
+def get_relations(memory_id: int, agent_id: str = "default") -> list[dict]:
+    """Restituisce tutte le relazioni di una memoria (in entrambe le direzioni)."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT r.source_id, r.target_id, r.relation, r.created_at,
+                   m.content AS related_content
+            FROM memory_relations r
+            JOIN memories m ON m.id = CASE
+                WHEN r.source_id = ? THEN r.target_id
+                ELSE r.source_id
+            END
+            WHERE (r.source_id = ? OR r.target_id = ?) AND m.agent_id = ?
+            ORDER BY r.created_at DESC
+            """,
+            (memory_id, memory_id, memory_id, agent_id),
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 # ── Private helpers ──────────────────────────────────────────────────────────
@@ -242,6 +387,7 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
                 WHERE memories_fts MATCH :query
                   AND m.agent_id = :agent_id
                   AND m.compressed_into IS NULL
+                  AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
                   {category_filter}
                 ORDER BY rank, m.importance DESC
                 LIMIT :limit
@@ -256,6 +402,7 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
                 WHERE content LIKE :query
                   AND agent_id = :agent_id
                   AND compressed_into IS NULL
+                  AND (expires_at IS NULL OR expires_at > datetime('now'))
                   {category_filter}
                 ORDER BY importance DESC, created_at DESC
                 LIMIT :limit
@@ -299,6 +446,7 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
                    created_at, updated_at
             FROM memories
             WHERE id IN ({placeholders})
+              AND (expires_at IS NULL OR expires_at > datetime('now'))
         """
         params: list = [mem_id for mem_id, _ in top_ids]
         if category:
@@ -308,6 +456,7 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
                        created_at, updated_at
                 FROM memories
                 WHERE id IN ({placeholders}) AND category = ?
+                  AND (expires_at IS NULL OR expires_at > datetime('now'))
             """
             params.append(category)
         rows = conn.execute(sql, params).fetchall()

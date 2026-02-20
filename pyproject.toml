@@ -30,6 +30,9 @@ dependencies = [
 semantic = [
     "sentence-transformers>=3.0.0",
 ]
+mcp = [
+    "mcp>=1.0.0",
+]
 dev = [
     "pytest>=8.0.0",
     "httpx>=0.27.0",
@@ -43,6 +46,7 @@ Issues = "https://github.com/auriti-web-design/kore-memory/issues"
 
 [project.scripts]
 kore = "src.cli:main"
+kore-mcp = "src.mcp_server:main"
 kore-welcome = "src.welcome:print_welcome"
 
 [tool.hatch.build.targets.wheel]

@@ -38,6 +38,7 @@ def init_db() -> None:
                 last_accessed   TEXT    DEFAULT NULL,
                 compressed_into INTEGER DEFAULT NULL REFERENCES memories(id),
                 embedding       TEXT    DEFAULT NULL,
+                expires_at      TEXT    DEFAULT NULL,
                 created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
                 updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
             );
@@ -72,7 +73,31 @@ def init_db() -> None:
                 INSERT INTO memories_fts (rowid, content, category)
                 VALUES (new.id, new.content, new.category);
             END;
+
+            -- Tag per memorie
+            CREATE TABLE IF NOT EXISTS memory_tags (
+                memory_id   INTEGER NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+                tag         TEXT    NOT NULL,
+                PRIMARY KEY (memory_id, tag)
+            );
+            CREATE INDEX IF NOT EXISTS idx_tags_tag ON memory_tags (tag);
+
+            -- Relazioni tra memorie (grafo)
+            CREATE TABLE IF NOT EXISTS memory_relations (
+                source_id   INTEGER NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+                target_id   INTEGER NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
+                relation    TEXT    NOT NULL DEFAULT 'related',
+                created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+                PRIMARY KEY (source_id, target_id, relation)
+            );
+            CREATE INDEX IF NOT EXISTS idx_relations_source ON memory_relations (source_id);
+            CREATE INDEX IF NOT EXISTS idx_relations_target ON memory_relations (target_id);
         """)
+
+        # Migrazione: aggiungi expires_at se mancante (DB pre-esistenti)
+        cols = {row[1] for row in conn.execute("PRAGMA table_info(memories)").fetchall()}
+        if "expires_at" not in cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN expires_at TEXT DEFAULT NULL")
 
 
 @contextmanager
