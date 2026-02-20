@@ -24,11 +24,11 @@ def _embeddings_available() -> bool:
     return _EMBEDDINGS_AVAILABLE
 
 
-def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> int:
+def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int, int]:
     """
     Persist a new memory record scoped to agent_id.
     Auto-scores importance if not explicitly set.
-    Returns the new row id.
+    Returns (row_id, importance).
     """
     importance = req.importance
     if importance == 1:
@@ -37,7 +37,11 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> int:
     embedding_blob = None
     if _embeddings_available():
         from .embedder import embed, serialize
-        embedding_blob = serialize(embed(req.content))
+        try:
+            embedding_blob = serialize(embed(req.content))
+        except Exception:
+            # Embedding fallito — salva comunque senza embedding
+            embedding_blob = None
 
     with get_connection() as conn:
         cursor = conn.execute(
@@ -53,7 +57,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> int:
                 "embedding": embedding_blob,
             },
         )
-        return cursor.lastrowid
+        return cursor.lastrowid, importance
 
 
 def search_memories(
@@ -108,7 +112,8 @@ def run_decay_pass(agent_id: str | None = None) -> int:
             params.append(agent_id)
         rows = conn.execute(sql, params).fetchall()
 
-    updated = 0
+    now = datetime.now(timezone.utc).isoformat()
+    updates = []
     for row in rows:
         new_score = compute_decay(
             importance=row["importance"],
@@ -116,14 +121,16 @@ def run_decay_pass(agent_id: str | None = None) -> int:
             last_accessed=row["last_accessed"],
             access_count=row["access_count"],
         )
-        with get_connection() as conn:
-            conn.execute(
-                "UPDATE memories SET decay_score = ?, updated_at = datetime('now') WHERE id = ?",
-                (new_score, row["id"]),
-            )
-        updated += 1
+        updates.append((new_score, now, row["id"]))
 
-    return updated
+    if updates:
+        with get_connection() as conn:
+            conn.executemany(
+                "UPDATE memories SET decay_score = ?, updated_at = ? WHERE id = ?",
+                updates,
+            )
+
+    return len(updates)
 
 
 def get_timeline(subject: str, limit: int = 20, agent_id: str = "default") -> list[MemoryRecord]:
@@ -147,10 +154,10 @@ def _reinforce(memory_ids: list[int]) -> None:
             SET access_count = access_count + 1,
                 last_accessed = ?,
                 decay_score   = MIN(1.0, decay_score + 0.05),
-                updated_at    = datetime('now')
+                updated_at    = ?
             WHERE id = ?
             """,
-            [(now, mid) for mid in memory_ids],
+            [(now, now, mid) for mid in memory_ids],
         )
 
 
@@ -248,12 +255,17 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
 
 
 def _sanitize_fts_query(query: str) -> str:
-    special = set('"^():-')
+    """Sanitizza query FTS5: rimuove operatori speciali, limita token."""
+    special = set('"^():-*+<>&|')
     cleaned = "".join(c if c not in special else " " for c in query).strip()
     if not cleaned:
         return ""
-    tokens = [t for t in cleaned.split() if t]
-    return " OR ".join(f"{t}*" for t in tokens)
+    # Max 10 token, min 2 caratteri ciascuno — previene DoS
+    tokens = [t for t in cleaned.split() if len(t) >= 2][:10]
+    if not tokens:
+        return ""
+    # Quote per match esatto, wildcard suffix per flessibilita
+    return " OR ".join(f'"{t}"*' for t in tokens)
 
 
 def _row_to_record(row) -> MemoryRecord:
