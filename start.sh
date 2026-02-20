@@ -25,7 +25,7 @@ fi
 fuser -k 8765/tcp 2>/dev/null || true
 sleep 1
 
-nohup "$DIR/.venv/bin/uvicorn" src.main:app \
+nohup "$DIR/.venv/bin/kore" \
     --host 127.0.0.1 \
     --port 8765 \
     --log-level warning \
