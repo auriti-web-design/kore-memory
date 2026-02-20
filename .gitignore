@@ -37,6 +37,9 @@ logs/
 .coverage
 htmlcov/
 
+# Piani di lavoro
+PLAN-*.md
+
 # OS
 .DS_Store
 Thumbs.db
