@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.5.4] - 2026-02-20
+
+### 🔧 Fixed
+- **UX Improvement** — `KORE_LOCAL_ONLY=1` di default per localhost. Nessuna API key richiesta per `127.0.0.1`
+- **Auto API Key Generation** — Genera automaticamente API key sicura al primo avvio se mancante
+- **Installation Experience** — Funziona out-of-the-box dopo `pip install kore-memory && kore`
+
+### ✨ Added
+- **JavaScript/TypeScript SDK** — `kore-memory-client` npm package con 17 metodi async, zero runtime dependencies, dual ESM/CJS output, full TypeScript support
+- **Error Hierarchy** — 6 classi errore tipizzate (KoreError, KoreAuthError, KoreNotFoundError, etc.)
+- **Complete Test Suite** — 44 test per SDK JS con mock fetch, error handling, tutti i metodi API
+
+### 📦 Package
+- **Zero Dependencies** — usa fetch nativo, ~6KB minified
+- **Dual Output** — ESM + CommonJS con tsup
+- **Type Definitions** — .d.ts completi per TypeScript
+- **Node 18+** — supporto JavaScript moderno
+
+### 📚 Documentation
+- README completo per SDK con esempi TypeScript
+- Sezione JS/TS SDK aggiunta al README principale
+- Roadmap aggiornato: npm SDK ✅
+
+---
+
 ## [0.5.3] - 2026-02-20
 
 ### ✨ Added

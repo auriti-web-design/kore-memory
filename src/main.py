@@ -109,6 +109,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    # Initialize API key (auto-generate if missing)
+    from .auth import get_or_create_api_key
+    get_or_create_api_key()
     yield
 
 

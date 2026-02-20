@@ -59,7 +59,7 @@ def _is_local(request: Request) -> bool:
 
 def _local_only_mode() -> bool:
     # Controlla env var a runtime per supporto test
-    return os.getenv("KORE_LOCAL_ONLY", "0") == "1"
+    return os.getenv("KORE_LOCAL_ONLY", "1") == "1"
 
 
 # ── FastAPI dependency ────────────────────────────────────────────────────────

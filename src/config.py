@@ -22,7 +22,7 @@ API_KEY_FILE = DATA_DIR / ".api_key"
 
 HOST = os.getenv("KORE_HOST", "127.0.0.1")
 PORT = int(os.getenv("KORE_PORT", "8765"))
-LOCAL_ONLY = os.getenv("KORE_LOCAL_ONLY", "0") == "1"
+LOCAL_ONLY = os.getenv("KORE_LOCAL_ONLY", "1") == "1"
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -49,4 +49,4 @@ SIMILARITY_THRESHOLD = float(os.getenv("KORE_SIMILARITY_THRESHOLD", "0.88"))
 
 # ── Versione ──────────────────────────────────────────────────────────────────
 
-VERSION = "0.5.3"
+VERSION = "0.5.4"

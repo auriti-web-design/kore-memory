@@ -442,6 +442,68 @@ open http://localhost:8765/dashboard
 
 ---
 
+## 🟨 JavaScript/TypeScript SDK
+
+Kore ships with a native JavaScript/TypeScript client — zero runtime dependencies, dual ESM/CJS output, full type safety.
+
+```bash
+npm install kore-memory-client
+```
+
+### Usage
+
+```typescript
+import { KoreClient } from 'kore-memory-client';
+
+const kore = new KoreClient({
+  baseUrl: 'http://localhost:8765',
+  agentId: 'my-agent'
+});
+
+// Save
+const result = await kore.save({
+  content: 'User prefers dark mode',
+  category: 'preference',
+  importance: 4
+});
+
+// Search
+const memories = await kore.search({
+  q: 'dark mode',
+  limit: 5,
+  semantic: true
+});
+
+// Tags & Relations
+await kore.addTags(result.id, ['ui', 'preference']);
+await kore.addRelation(result.id, otherId, 'related');
+
+// Maintenance
+await kore.decayRun();
+await kore.compress();
+
+// Export
+const backup = await kore.exportMemories();
+```
+
+### Error Handling
+
+```typescript
+import { KoreValidationError, KoreAuthError } from 'kore-memory-client';
+
+try {
+  await kore.save({ content: 'ab' }); // too short
+} catch (error) {
+  if (error instanceof KoreValidationError) {
+    console.log('Validation failed:', error.detail);
+  }
+}
+```
+
+**Features:** Zero deps • ESM + CJS • Full TypeScript • 17 async methods • ~6KB minified • Node 18+
+
+---
+
 ## 🐍 Python SDK
 
 Kore ships with a built-in Python client SDK — type-safe, zero dependencies beyond `httpx`, supports both sync and async.
@@ -570,7 +632,7 @@ with KoreClient() as kore:
 - [x] OOM protection (embedder)
 - [x] Vector index cache
 - [x] Python client SDK (sync + async)
-- [ ] npm client SDK
+- [x] npm client SDK
 - [x] Web dashboard (localhost UI)
 - [ ] PostgreSQL backend
 - [ ] Embeddings v2 (multilingual-e5-large)

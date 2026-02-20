@@ -40,6 +40,10 @@ htmlcov/
 # Piani di lavoro
 PLAN-*.md
 
+# SDK JS
+sdk/js/node_modules/
+sdk/js/dist/
+
 # OS
 .DS_Store
 Thumbs.db
