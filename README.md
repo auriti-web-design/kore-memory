@@ -19,7 +19,7 @@ Remembers what matters. Forgets what doesn't. Never calls home.
 
 <br/>
 
-[**Install**](#-install) · [**Quickstart**](#-quickstart) · [**How it works**](#-how-it-works) · [**API**](#-api-reference) · [**Roadmap**](#-roadmap)
+[**Install**](#-install) · [**Quickstart**](#-quickstart) · [**How it works**](#-how-it-works) · [**API**](#-api-reference) · [**Changelog**](CHANGELOG.md) · [**Roadmap**](#-roadmap)
 
 </div>
 
