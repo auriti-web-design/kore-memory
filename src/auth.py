@@ -35,9 +35,14 @@ def get_or_create_api_key() -> str:
     _KEY_FILE.parent.mkdir(parents=True, exist_ok=True)
     _KEY_FILE.write_text(new_key)
     _KEY_FILE.chmod(0o600)  # owner read/write only
-    print(f"\n🔑 Kore API key generated: {new_key}")
-    print(f"   Saved to: {_KEY_FILE}")
-    print(f"   Set KORE_API_KEY env var or use X-Kore-Key header.\n")
+    
+    # Log key creation with masked value (security: never log full keys)
+    import logging
+    masked_key = f"{new_key[:8]}...{new_key[-8:]}"
+    logging.warning(f"🔑 Kore API key generated: {masked_key}")
+    logging.warning(f"   Full key saved to: {_KEY_FILE}")
+    logging.warning(f"   Read the key from the file above or set KORE_API_KEY env var.")
+    
     return new_key
 
 
