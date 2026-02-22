@@ -278,12 +278,22 @@ def remove_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> i
     return removed
 
 
-def get_tags(memory_id: int) -> list[str]:
-    """Restituisce i tag di una memoria."""
+def get_tags(memory_id: int, agent_id: str = "default") -> list[str]:
+    """
+    Restituisce i tag di una memoria.
+    Verifica che la memoria appartenga all'agent_id specificato.
+    """
     with get_connection() as conn:
+        # JOIN con memories per verificare ownership
         rows = conn.execute(
-            "SELECT tag FROM memory_tags WHERE memory_id = ? ORDER BY tag",
-            (memory_id,),
+            """
+            SELECT mt.tag 
+            FROM memory_tags mt
+            JOIN memories m ON mt.memory_id = m.id
+            WHERE mt.memory_id = ? AND m.agent_id = ?
+            ORDER BY mt.tag
+            """,
+            (memory_id, agent_id),
         ).fetchall()
     return [r["tag"] for r in rows]
 

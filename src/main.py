@@ -248,7 +248,7 @@ def tag_add(
 ) -> TagResponse:
     """Aggiunge tag a una memoria."""
     count = add_tags(memory_id, req.tags, agent_id=agent_id)
-    tags = get_tags(memory_id)
+    tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=count, tags=tags)
 
 
@@ -261,7 +261,7 @@ def tag_remove(
 ) -> TagResponse:
     """Rimuove tag da una memoria."""
     remove_tags(memory_id, req.tags, agent_id=agent_id)
-    tags = get_tags(memory_id)
+    tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=len(tags), tags=tags)
 
 
@@ -269,9 +269,10 @@ def tag_remove(
 def tag_list(
     memory_id: int,
     _: str = _Auth,
+    agent_id: str = _Agent,
 ) -> TagResponse:
-    """Restituisce i tag di una memoria."""
-    tags = get_tags(memory_id)
+    """Restituisce i tag di una memoria (solo se appartiene all'agent)."""
+    tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=len(tags), tags=tags)
 
 
