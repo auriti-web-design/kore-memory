@@ -186,22 +186,53 @@ def search(
     request: Request,
     q: str = Query(..., min_length=1, description="Search query (any language)"),
     limit: int = Query(5, ge=1, le=20),
-    offset: int = Query(0, ge=0, description="Numero risultati da saltare"),
+    cursor: str | None = Query(None, description="Opaque pagination cursor"),
     category: str | None = Query(None),
     semantic: bool = Query(True),
     _: str = _Auth,
     agent_id: str = _Agent,
+    # Deprecated params for backwards compatibility
+    offset: int = Query(0, ge=0, deprecated=True, description="Deprecated: use cursor"),
 ) -> MemorySearchResponse:
-    """Semantic search scoped to the requesting agent, with pagination."""
+    """Semantic search scoped to the requesting agent, with cursor-based pagination."""
     _check_rate_limit(request.client.host if request.client else "unknown", "/search")
-    # Chiedi più risultati per gestire l'offset
-    all_results = search_memories(query=q, limit=limit + offset, category=category, semantic=semantic, agent_id=agent_id)
-    page = all_results[offset:offset + limit]
+    
+    # Parse cursor (base64 encoded tuple of decay_score, id)
+    cursor_tuple = None
+    if cursor:
+        try:
+            import base64
+            import json
+            decoded = base64.b64decode(cursor).decode('utf-8')
+            cursor_tuple = tuple(json.loads(decoded))
+        except Exception:
+            raise HTTPException(400, "Invalid cursor format")
+    
+    # Execute search with cursor
+    results, next_cursor = search_memories(
+        query=q, 
+        limit=limit, 
+        category=category, 
+        semantic=semantic, 
+        agent_id=agent_id,
+        cursor=cursor_tuple,
+    )
+    
+    # Encode next cursor
+    cursor_str = None
+    if next_cursor:
+        import base64
+        import json
+        cursor_str = base64.b64encode(
+            json.dumps(next_cursor).encode('utf-8')
+        ).decode('utf-8')
+    
     return MemorySearchResponse(
-        results=page,
-        total=len(all_results),
-        offset=offset,
-        has_more=offset + limit < len(all_results),
+        results=results,
+        total=len(results),
+        cursor=cursor_str,
+        has_more=next_cursor is not None,
+        offset=offset,  # Keep for backwards compat
     )
 
 
@@ -210,19 +241,42 @@ def timeline(
     request: Request,
     subject: str = Query(..., min_length=1),
     limit: int = Query(20, ge=1, le=50),
-    offset: int = Query(0, ge=0, description="Numero risultati da saltare"),
+    cursor: str | None = Query(None, description="Opaque pagination cursor"),
     _: str = _Auth,
     agent_id: str = _Agent,
+    offset: int = Query(0, ge=0, deprecated=True, description="Deprecated: use cursor"),
 ) -> MemorySearchResponse:
-    """Chronological memory history for a subject, scoped to agent, with pagination."""
+    """Chronological memory history for a subject, scoped to agent, with cursor-based pagination."""
     _check_rate_limit(request.client.host if request.client else "unknown", "/timeline")
-    all_results = get_timeline(subject=subject, limit=limit + offset, agent_id=agent_id)
-    page = all_results[offset:offset + limit]
+    
+    # Parse cursor
+    cursor_tuple = None
+    if cursor:
+        try:
+            import base64
+            import json
+            decoded = base64.b64decode(cursor).decode('utf-8')
+            cursor_tuple = tuple(json.loads(decoded))
+        except Exception:
+            raise HTTPException(400, "Invalid cursor format")
+    
+    results, next_cursor = get_timeline(subject=subject, limit=limit, agent_id=agent_id, cursor=cursor_tuple)
+    
+    # Encode next cursor
+    cursor_str = None
+    if next_cursor:
+        import base64
+        import json
+        cursor_str = base64.b64encode(
+            json.dumps(next_cursor).encode('utf-8')
+        ).decode('utf-8')
+    
     return MemorySearchResponse(
-        results=page,
-        total=len(all_results),
+        results=results,
+        total=len(results),
+        cursor=cursor_str,
+        has_more=next_cursor is not None,
         offset=offset,
-        has_more=offset + limit < len(all_results),
     )
 
 

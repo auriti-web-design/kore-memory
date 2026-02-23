@@ -84,27 +84,47 @@ def search_memories(
     category: str | None = None,
     semantic: bool = True,
     agent_id: str = "default",
-) -> list[MemoryRecord]:
+    cursor: tuple[float, int] | None = None,
+) -> tuple[list[MemoryRecord], tuple[float, int] | None]:
     """
-    Search memories. Uses semantic (embedding) search when available,
+    Search memories with cursor-based pagination.
+    
+    Returns: (results, next_cursor)
+    - results: list of MemoryRecord
+    - next_cursor: (decay_score, id) for next page, or None if no more results
+    
+    Uses semantic (embedding) search when available,
     falls back to FTS5 full-text search, then LIKE.
     Filters out fully-decayed memories. Reinforces access count on results.
     """
+    # Fetch extra results to ensure we have enough after filtering
+    fetch_limit = limit * 3
+    
     if semantic and _embeddings_available():
-        results = _semantic_search(query, limit * 2, category, agent_id)
+        results = _semantic_search(query, fetch_limit, category, agent_id, cursor)
     else:
-        results = _fts_search(query, limit * 2, category, agent_id)
+        results = _fts_search(query, fetch_limit, category, agent_id, cursor)
 
     # Filter forgotten memories, re-rank by effective score
     alive = [r for r in results if not should_forget(r.decay_score or 1.0)]
     alive.sort(key=lambda r: effective_score(r.decay_score or 1.0, r.importance), reverse=True)
-    top = alive[:limit]
+    
+    # Take requested page + 1 to check if there are more results
+    page = alive[:limit + 1]
+    has_more = len(page) > limit
+    top = page[:limit]
+    
+    # Generate next cursor if there are more results
+    next_cursor = None
+    if has_more and top:
+        last = top[-1]
+        next_cursor = (last.decay_score or 1.0, last.id)
 
     # Reinforce access for retrieved memories
     if top:
         _reinforce([r.id for r in top])
 
-    return top
+    return top, next_cursor
 
 
 def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
@@ -182,13 +202,34 @@ def _run_decay_pass_inner(agent_id: str | None = None) -> int:
     return len(updates)
 
 
-def get_timeline(subject: str, limit: int = 20, agent_id: str = "default") -> list[MemoryRecord]:
-    """Return memories about a subject ordered by creation time (oldest first)."""
+def get_timeline(
+    subject: str, 
+    limit: int = 20, 
+    agent_id: str = "default",
+    cursor: tuple[float, int] | None = None,
+) -> tuple[list[MemoryRecord], tuple[float, int] | None]:
+    """Return memories about a subject ordered by creation time with cursor pagination."""
+    fetch_limit = limit * 2  # Fetch extra for sorting
+    
     if _embeddings_available():
-        results = _semantic_search(subject, limit, category=None, agent_id=agent_id)
+        results = _semantic_search(subject, fetch_limit, category=None, agent_id=agent_id, cursor=cursor)
     else:
-        results = _fts_search(subject, limit, category=None, agent_id=agent_id)
-    return sorted(results, key=lambda r: r.created_at)
+        results = _fts_search(subject, fetch_limit, category=None, agent_id=agent_id, cursor=cursor)
+    
+    # Sort by creation time (oldest first)
+    sorted_results = sorted(results, key=lambda r: r.created_at)
+    
+    # Paginate
+    page = sorted_results[:limit + 1]
+    has_more = len(page) > limit
+    top = page[:limit]
+    
+    next_cursor = None
+    if has_more and top:
+        last = top[-1]
+        next_cursor = (last.decay_score or 1.0, last.id)
+    
+    return top, next_cursor
 
 
 def export_memories(agent_id: str = "default") -> list[dict]:
@@ -382,10 +423,22 @@ def _reinforce(memory_ids: list[int]) -> None:
         )
 
 
-def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "default") -> list[MemoryRecord]:
+def _fts_search(
+    query: str, 
+    limit: int, 
+    category: str | None, 
+    agent_id: str = "default",
+    cursor: tuple[float, int] | None = None,
+) -> list[MemoryRecord]:
     """Full-text search via SQLite FTS5 with prefix wildcards, scoped to agent."""
     with get_connection() as conn:
         safe_query = _sanitize_fts_query(query)
+
+        cursor_filter = ""
+        if cursor:
+            decay_score, last_id = cursor
+            cursor_filter = "AND ((m.decay_score, m.id) < (:cursor_score, :cursor_id))" if safe_query else \
+                           "AND ((decay_score, id) < (:cursor_score, :cursor_id))"
 
         if safe_query:
             sql = """
@@ -399,7 +452,8 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
                   AND m.compressed_into IS NULL
                   AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
                   {category_filter}
-                ORDER BY rank, m.importance DESC
+                  {cursor_filter}
+                ORDER BY m.decay_score DESC, m.id DESC
                 LIMIT :limit
             """
             params: dict = {"query": safe_query, "limit": limit, "agent_id": agent_id}
@@ -414,10 +468,15 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
                   AND compressed_into IS NULL
                   AND (expires_at IS NULL OR expires_at > datetime('now'))
                   {category_filter}
-                ORDER BY importance DESC, created_at DESC
+                  {cursor_filter}
+                ORDER BY decay_score DESC, id DESC
                 LIMIT :limit
             """
             params = {"query": f"%{query}%", "limit": limit, "agent_id": agent_id}
+
+        if cursor:
+            params["cursor_score"] = cursor[0]
+            params["cursor_id"] = cursor[1]
 
         category_filter = (
             "AND m.category = :category" if safe_query and category
@@ -427,12 +486,21 @@ def _fts_search(query: str, limit: int, category: str | None, agent_id: str = "d
         if category:
             params["category"] = category
 
-        rows = conn.execute(sql.format(category_filter=category_filter), params).fetchall()
+        rows = conn.execute(
+            sql.format(category_filter=category_filter, cursor_filter=cursor_filter), 
+            params
+        ).fetchall()
 
     return [_row_to_record(r) for r in rows]
 
 
-def _semantic_search(query: str, limit: int, category: str | None, agent_id: str = "default") -> list[MemoryRecord]:
+def _semantic_search(
+    query: str, 
+    limit: int, 
+    category: str | None, 
+    agent_id: str = "default",
+    cursor: tuple[float, int] | None = None,
+) -> list[MemoryRecord]:
     """Ricerca semantica con indice vettoriale in-memory, scoped per agente."""
     from .embedder import embed
     from .vector_index import get_index
@@ -445,9 +513,17 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
     if not top_ids:
         return []
 
-    # Carica i record completi dal DB
+    # Carica i record completi dal DB con cursor filter
     id_score_map = {mem_id: score for mem_id, score in top_ids}
     placeholders = ",".join("?" for _ in top_ids)
+
+    cursor_filter = ""
+    params = [id for id, _ in top_ids]
+    
+    if cursor:
+        decay_score, last_id = cursor
+        cursor_filter = "AND ((decay_score, id) < (?, ?))"
+        params.extend([decay_score, last_id])
 
     with get_connection() as conn:
         sql = f"""
@@ -457,6 +533,8 @@ def _semantic_search(query: str, limit: int, category: str | None, agent_id: str
             FROM memories
             WHERE id IN ({placeholders})
               AND (expires_at IS NULL OR expires_at > datetime('now'))
+              {cursor_filter}
+            ORDER BY decay_score DESC, id DESC
         """
         params: list = [mem_id for mem_id, _ in top_ids]
         if category:

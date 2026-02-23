@@ -55,8 +55,10 @@ class MemorySaveResponse(BaseModel):
 class MemorySearchResponse(BaseModel):
     results: list[MemoryRecord]
     total: int
-    offset: int = 0
+    cursor: str | None = Field(None, description="Opaque cursor for next page (base64)")
     has_more: bool = False
+    # Deprecated fields kept for backwards compatibility
+    offset: int = Field(0, deprecated=True, description="Deprecated: use cursor instead")
 
 
 class MemoryImportRequest(BaseModel):
