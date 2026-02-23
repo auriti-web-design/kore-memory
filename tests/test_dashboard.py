@@ -6,8 +6,8 @@ Verifica che /dashboard risponda correttamente e che l'HTML contenga le sezioni 
 import httpx
 import pytest
 
-from src.database import init_db
-from src.main import app
+from kore_memory.database import init_db
+from kore_memory.main import app
 
 
 @pytest.fixture(autouse=True)

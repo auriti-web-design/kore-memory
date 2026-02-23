@@ -14,8 +14,8 @@ from fastapi.testclient import TestClient
 os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
 os.environ["KORE_LOCAL_ONLY"] = "1"
 
-from src.database import init_db  # noqa: E402
-from src.main import app  # noqa: E402
+from kore_memory.database import init_db  # noqa: E402
+from kore_memory.main import app  # noqa: E402
 
 # Inizializza schema — il TestClient non attiva il lifespan senza context manager
 init_db()
@@ -155,7 +155,7 @@ class TestDelete:
 
 class TestBatchSave:
     def setup_method(self):
-        from src.main import _rate_buckets
+        from kore_memory.main import _rate_buckets
         _rate_buckets.clear()
 
     def test_batch_save_multiple(self):
@@ -329,7 +329,7 @@ class TestRelations:
 class TestTTL:
     def setup_method(self):
         """Resetta rate limiter per evitare 429 nei test TTL."""
-        from src.main import _rate_buckets
+        from kore_memory.main import _rate_buckets
         _rate_buckets.clear()
 
     def test_save_with_ttl(self):
@@ -378,7 +378,7 @@ class TestTTL:
 
     def test_expired_memory_not_in_search(self):
         """Memorie con expires_at nel passato non appaiono nella ricerca."""
-        from src.database import get_connection
+        from kore_memory.database import get_connection
 
         # Inserisci direttamente una memoria già scaduta
         with get_connection() as conn:
@@ -395,7 +395,7 @@ class TestTTL:
 
     def test_cleanup_removes_expired(self):
         """Il cleanup rimuove effettivamente le memorie scadute."""
-        from src.database import get_connection
+        from kore_memory.database import get_connection
 
         # Inserisci memoria già scaduta
         with get_connection() as conn:
@@ -474,7 +474,7 @@ class TestExportImport:
 
     def test_export_excludes_expired(self):
         """L'export non include memorie con TTL scaduto."""
-        from src.database import get_connection
+        from kore_memory.database import get_connection
 
         with get_connection() as conn:
             conn.execute(
@@ -493,7 +493,7 @@ class TestExportImport:
 class TestPagination:
     def setup_method(self):
         """Crea abbastanza memorie per testare la paginazione."""
-        from src.main import _rate_buckets
+        from kore_memory.main import _rate_buckets
         _rate_buckets.clear()
         for i in range(6):
             client.post("/save", json={

@@ -11,7 +11,7 @@ class CustomBuildHook(BuildHookInterface):
 
     def finalize(self, version, build_data, artifact_path):
         try:
-            from src.welcome import print_welcome
+            from kore_memory.welcome import print_welcome
             print_welcome()
         except Exception:
             pass

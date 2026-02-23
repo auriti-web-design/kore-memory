@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kore-memory"
-version = "0.5.4"
+version = "0.6.0"
 description = "The memory layer that thinks like a human: remembers what matters, forgets what doesn't, and never calls home."
 readme = "README.md"
 license = { text = "MIT" }
@@ -45,12 +45,12 @@ Repository = "https://github.com/auriti-web-design/kore-memory"
 Issues = "https://github.com/auriti-web-design/kore-memory/issues"
 
 [project.scripts]
-kore = "src.cli:main"
-kore-mcp = "src.mcp_server:main"
-kore-welcome = "src.welcome:print_welcome"
+kore = "kore_memory.cli:main"
+kore-mcp = "kore_memory.mcp_server:main"
+kore-welcome = "kore_memory.welcome:print_welcome"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["kore_memory"]
 artifacts = ["assets/logo.svg"]
 
 [tool.hatch.build.hooks.custom]

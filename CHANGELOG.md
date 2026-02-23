@@ -7,6 +7,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.6.0] - 2026-02-23
+
+### ⚠️ BREAKING CHANGES
+
+- **Package Renamed** — `src` → `kore_memory` to fix namespace collision (#1)
+  - All imports must be updated: `from src import KoreClient` → `from kore_memory import KoreClient`
+  - See [MIGRATION-v0.6.md](MIGRATION-v0.6.md) for migration guide
+  - Automated migration: `sed -i 's/from src\./from kore_memory./g' *.py`
+
+### 🔧 Fixed
+
+- **#2 (CRITICAL)** — Pagination broken with offset/limit
+  - Replaced broken offset/limit with cursor-based pagination
+  - No more duplicate/missing results with offset > 0
+  - `offset` parameter kept for backwards compat (deprecated)
+  - New `cursor` param returns base64 encoded position token
+  - Test: 20 records, 4 pages, zero duplicates ✅
+
+- **#1 (CRITICAL)** — Package naming `src/` causes namespace collision
+  - Package renamed to `kore_memory` following Python best practices
+  - Fixes installation conflicts with other projects using src-layout
+  - All internal imports updated
+
+### ✨ Added
+
+- **Cursor-based Pagination** — Reliable pagination for `/search` and `/timeline`
+  - `cursor` parameter for next page navigation
+  - `has_more` boolean in response
+  - Backwards compatible with deprecated `offset`
+
+### 📚 Documentation
+
+- Added `MIGRATION-v0.6.md` with migration guide
+- Updated README with new import paths
+- Updated all code examples to use `kore_memory`
+
+---
+
 ## [0.5.4] - 2026-02-20
 
 ### 🔧 Fixed

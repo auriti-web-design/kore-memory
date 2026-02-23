@@ -7,15 +7,15 @@ import os
 # Add src to path
 sys.path.insert(0, os.path.dirname(__file__))
 
-from src.database import init_db
-from src.models import MemorySaveRequest
-from src.repository import save_memory, search_memories
+from kore_memory.database import init_db
+from kore_memory.models import MemorySaveRequest
+from kore_memory.repository import save_memory, search_memories
 
 # Init DB
 init_db()
 
 # Pulisci test precedenti
-from src.database import get_connection
+from kore_memory.database import get_connection
 with get_connection() as conn:
     conn.execute("DELETE FROM memories WHERE agent_id = 'test_pagination'")
 

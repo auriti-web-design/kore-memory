@@ -15,14 +15,14 @@ import pytest
 os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
 os.environ["KORE_LOCAL_ONLY"] = "1"
 
-from src.database import init_db  # noqa: E402
-from src.main import app, _rate_buckets  # noqa: E402
+from kore_memory.database import init_db  # noqa: E402
+from kore_memory.main import app, _rate_buckets  # noqa: E402
 
 init_db()
 
 import httpx  # noqa: E402
 
-from src.client import (  # noqa: E402
+from kore_memory.client import (  # noqa: E402
     AsyncKoreClient,
     KoreAuthError,
     KoreClient,
@@ -34,7 +34,7 @@ from src.client import (  # noqa: E402
     _build_headers,
     _raise_for_status,
 )
-from src.models import (  # noqa: E402
+from kore_memory.models import (  # noqa: E402
     BatchSaveResponse,
     CleanupExpiredResponse,
     CompressRunResponse,

@@ -515,7 +515,7 @@ pip install kore-memory
 ### Sync
 
 ```python
-from src import KoreClient
+from kore_memory import KoreClient
 
 with KoreClient("http://localhost:8765", agent_id="my-agent") as kore:
     # Save
@@ -547,7 +547,7 @@ with KoreClient("http://localhost:8765", agent_id="my-agent") as kore:
 ### Async
 
 ```python
-from src import AsyncKoreClient
+from kore_memory import AsyncKoreClient
 
 async with AsyncKoreClient("http://localhost:8765", agent_id="my-agent") as kore:
     result = await kore.save("Async memory", category="project")
@@ -558,7 +558,7 @@ async with AsyncKoreClient("http://localhost:8765", agent_id="my-agent") as kore
 ### Error Handling
 
 ```python
-from src import KoreClient, KoreValidationError, KoreRateLimitError
+from kore_memory import KoreClient, KoreValidationError, KoreRateLimitError
 
 with KoreClient() as kore:
     try:
