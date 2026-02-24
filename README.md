@@ -16,10 +16,11 @@ Remembers what matters. Forgets what doesn't. Never calls home.
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
 [![Zero Cloud](https://img.shields.io/badge/cloud-zero-orange?style=flat-square)]()
 [![Multilingual](https://img.shields.io/badge/languages-50%2B-purple?style=flat-square)]()
+[![Docs](https://img.shields.io/badge/docs-auritidesign.it-00b4d8?style=flat-square)](https://auritidesign.it/docs/kore-memory/)
 
 <br/>
 
-[**Install**](#-install) · [**Quickstart**](#-quickstart) · [**How it works**](#-how-it-works) · [**API**](#-api-reference) · [**Changelog**](CHANGELOG.md) · [**Roadmap**](#-roadmap)
+[**Docs**](https://auritidesign.it/docs/kore-memory/) · [**Install**](#-install) · [**Quickstart**](#-quickstart) · [**How it works**](#-how-it-works) · [**API**](#-api-reference) · [**Changelog**](CHANGELOG.md) · [**Roadmap**](#-roadmap)
 
 </div>
 
