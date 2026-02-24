@@ -20,6 +20,12 @@ export interface MemorySaveRequest {
   ttl_hours?: number; // 1-8760
 }
 
+export interface MemoryUpdateRequest {
+  content?: string;
+  category?: Category;
+  importance?: number; // 1-5
+}
+
 export interface MemoryRecord {
   id: number;
   content: string;
@@ -42,6 +48,7 @@ export interface MemorySearchResponse {
   total: number;
   offset: number;
   has_more: boolean;
+  cursor?: string | null;
 }
 
 export interface BatchSaveRequest {
@@ -96,6 +103,11 @@ export interface CleanupExpiredResponse {
   message: string;
 }
 
+export interface ArchiveResponse {
+  success: boolean;
+  message: string;
+}
+
 export interface MemoryExportResponse {
   memories: Record<string, any>[];
   total: number;
@@ -134,6 +146,7 @@ export interface SearchOptions {
   offset?: number;
   category?: Category;
   semantic?: boolean;
+  cursor?: string;
 }
 
 // Timeline options
@@ -141,4 +154,5 @@ export interface TimelineOptions {
   subject: string;
   limit?: number;
   offset?: number;
+  cursor?: string;
 }

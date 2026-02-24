@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.7.0] - 2026-02-24
+
+**Resolves ALL 30 open GitHub issues.**
+
+### ⚡ Performance
+- **#13** — Semantic search O(n) → numpy batch dot product (10-50x faster)
+- **#14** — Compressor O(n²) → numpy matrix multiplication for pairwise similarity
+- **#26** — Embeddings serialized as binary (`struct.pack`) instead of JSON text (~50% smaller)
+- **#19** — Batch save uses `embed_batch()` for single model invocation instead of N calls
+- **#27** — SQLite connection pooling (Queue-based, pool size 4)
+
+### 🔐 Security
+- **#12** — Rate limiter hardened: threading lock, `X-Forwarded-For`/`X-Real-IP` support, periodic bucket cleanup (prevents memory leak)
+- **#16** — Dashboard requires authentication for non-localhost requests
+- **#17** — CSP upgraded from `unsafe-inline` to nonce-based scripts (per-request nonce via `secrets.token_urlsafe`)
+- **#18** — CI security scanning: bandit SAST + pip-audit dependency audit
+- **#28** — Shell scripts: `.env` loading replaced with safe parser (no arbitrary code execution)
+
+### ✨ Added
+- **#15** — `PUT /memories/{id}` — update memory content, category, importance with automatic embedding regeneration
+- **#20** — Event system — in-process lifecycle hooks (MEMORY_SAVED, DELETED, UPDATED, COMPRESSED, DECAYED, ARCHIVED, RESTORED)
+- **#21** — Storage abstraction — `MemoryStore` Protocol with 16 method signatures for future PostgreSQL support
+- **#22** — MCP server expanded from 6 to 14 tools: added delete, update, batch save, tags, search by tag, relations, cleanup, import
+- **#24** — Dashboard HTML extracted from Python into `templates/dashboard.html` (dashboard.py: 1208 → 75 lines)
+- **#29** — Soft-delete: `POST /memories/{id}/archive`, `POST /memories/{id}/restore`, `GET /archive`
+- **#30** — Prometheus metrics endpoint: `GET /metrics` with memory counts, search latency, decay stats
+- **#31** — Static type checking: mypy configured, `py.typed` PEP 561 marker
+
+### 🧪 Testing
+- **#23** — MCP server test suite: 32 tests across 12 test classes covering all 14 tools
+- **#25** — Test fixtures: `conftest.py` with autouse rate limiter reset, isolated DB per test
+- **#7** — CI now tests semantic search with sentence-transformers (separate job with model caching)
+- Total test suite: **118 tests** (was 91)
+
+### 📦 SDK
+- JavaScript SDK updated to v0.7.0: added `update()`, `archive()`, `restore()`, `getArchived()`, `metrics()` methods
+- Cursor-based pagination support in search/timeline options
+
+---
+
 ## [0.6.0] - 2026-02-23
 
 ### ⚠️ BREAKING CHANGES
@@ -217,6 +257,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Naming
 
+- **0.7.x** — Performance, security, 30 issues resolved
+- **0.6.x** — Package rename, cursor-based pagination
 - **0.5.x** — MCP, tags, relations, TTL, batch API, Python SDK
 - **0.4.x** — Security & stability improvements
 - **0.3.x** — Semantic search & compression
@@ -225,6 +267,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.7.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.4...v0.6.0
+[0.5.4]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.0...v0.5.1

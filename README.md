@@ -47,6 +47,8 @@ Every AI agent memory tool has the same flaw: they remember everything forever, 
 | MCP Server (Claude, Cursor) | ✅ | ❌ | ❌ | ❌ |
 | Batch API | ✅ | ❌ | ❌ | ❌ |
 | Export / Import (JSON) | ✅ | ❌ | ✅ | ❌ |
+| Soft-delete / Archive | ✅ | ❌ | ❌ | ❌ |
+| Prometheus Metrics | ✅ | ❌ | ❌ | ❌ |
 | Agent namespace isolation | ✅ | ✅ | ✅ | ❌ |
 | Install in 2 minutes | ✅ | ❌ | ❌ | ❌ |
 
@@ -269,6 +271,7 @@ Each retrieval extends the half-life by **+15%** (spaced repetition effect).
 | `GET` | `/search?q=...` | Semantic search with pagination (`limit`, `offset`) |
 | `GET` | `/timeline?subject=...` | Chronological history with pagination |
 | `DELETE` | `/memories/{id}` | Delete a memory |
+| `PUT` | `/memories/{id}` | Update a memory (content, category, importance) |
 
 ### Tags
 
@@ -293,6 +296,15 @@ Each retrieval extends the half-life by **+15%** (spaced repetition effect).
 | `POST` | `/decay/run` | Recalculate decay scores + cleanup expired |
 | `POST` | `/compress` | Merge similar memories |
 | `POST` | `/cleanup` | Remove expired memories (TTL) |
+| `GET` | `/metrics` | Prometheus metrics (memory counts, latency, decay stats) |
+
+### Archive
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/memories/{id}/archive` | Soft-delete (archive) a memory |
+| `POST` | `/memories/{id}/restore` | Restore an archived memory |
+| `GET` | `/archive` | List archived memories |
 
 ### Backup
 
@@ -348,7 +360,7 @@ Interactive docs: **http://localhost:8765/docs**
 | `KORE_DB_PATH` | `data/memory.db` | Custom database path |
 | `KORE_HOST` | `127.0.0.1` | Server bind address |
 | `KORE_PORT` | `8765` | Server port |
-| `KORE_LOCAL_ONLY` | `0` | Skip auth for localhost requests |
+| `KORE_LOCAL_ONLY` | `1` | Skip auth for localhost requests |
 | `KORE_API_KEY` | auto-generated | Override API key |
 | `KORE_CORS_ORIGINS` | *(empty)* | Comma-separated allowed origins |
 | `KORE_EMBED_MODEL` | `paraphrase-multilingual-MiniLM-L12-v2` | Sentence-transformers model |
@@ -375,9 +387,17 @@ kore-mcp
 |---|---|
 | `memory_save` | Save a memory with auto-scoring |
 | `memory_search` | Semantic or full-text search |
+| `memory_delete` | Delete a memory |
+| `memory_update` | Update memory content, category, or importance |
+| `memory_save_batch` | Save up to 100 memories at once |
+| `memory_add_tags` | Add tags to a memory |
+| `memory_search_by_tag` | Search memories by tag |
+| `memory_add_relation` | Link two related memories |
 | `memory_timeline` | Chronological history for a subject |
 | `memory_decay_run` | Recalculate decay scores |
 | `memory_compress` | Merge similar memories |
+| `memory_cleanup` | Remove expired memories |
+| `memory_import` | Import memories from JSON |
 | `memory_export` | Export all active memories |
 
 ### Claude Desktop Configuration
@@ -477,6 +497,13 @@ const memories = await kore.search({
 // Tags & Relations
 await kore.addTags(result.id, ['ui', 'preference']);
 await kore.addRelation(result.id, otherId, 'related');
+
+// Update
+await kore.update(result.id, { importance: 5 });
+
+// Archive & Restore
+await kore.archive(result.id);
+await kore.restore(result.id);
 
 // Maintenance
 await kore.decayRun();
@@ -591,6 +618,10 @@ with KoreClient() as kore:
 | `cleanup()` | Remove expired memories |
 | `export_memories()` | Export all memories |
 | `import_memories(memories)` | Import memories |
+| `update(memory_id, content, category, importance)` | Update a memory |
+| `archive(memory_id)` | Archive (soft-delete) a memory |
+| `restore(memory_id)` | Restore an archived memory |
+| `get_archived(limit, offset)` | List archived memories |
 | `health()` | Health check |
 
 ---
@@ -607,6 +638,8 @@ with KoreClient() as kore:
 - **CORS** — restricted by default, configurable via `KORE_CORS_ORIGINS`
 - **FTS5 sanitization** — special characters stripped, token count limited
 - **OOM protection** — embedding input capped at 8000 chars
+- **CSP nonce** — per-request nonce for inline scripts, no `unsafe-inline`
+- **Connection pooling** — thread-safe SQLite connection pool
 
 ---
 
@@ -628,12 +661,20 @@ with KoreClient() as kore:
 - [x] TTL / Auto-expiration
 - [x] MCP Server (Claude, Cursor)
 - [x] Pagination (offset + has_more)
+- [x] Cursor-based pagination
 - [x] Centralized config (env vars)
 - [x] OOM protection (embedder)
 - [x] Vector index cache
+- [x] numpy-optimized search & compression
 - [x] Python client SDK (sync + async)
 - [x] npm client SDK
 - [x] Web dashboard (localhost UI)
+- [x] Soft-delete / archive
+- [x] Prometheus metrics
+- [x] MCP full API coverage (14 tools)
+- [x] CSP nonce-based security
+- [x] Event system (lifecycle hooks)
+- [x] Connection pooling
 - [ ] PostgreSQL backend
 - [ ] Embeddings v2 (multilingual-e5-large)
 

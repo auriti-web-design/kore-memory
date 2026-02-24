@@ -5,6 +5,7 @@
 
 import { mapHttpError } from "./errors.js";
 import type {
+  ArchiveResponse,
   BatchSaveRequest,
   BatchSaveResponse,
   CleanupExpiredResponse,
@@ -19,6 +20,7 @@ import type {
   MemorySaveRequest,
   MemorySaveResponse,
   MemorySearchResponse,
+  MemoryUpdateRequest,
   RelationResponse,
   SearchOptions,
   TagResponse,
@@ -109,6 +111,70 @@ export class KoreClient {
     }
   }
 
+  /**
+   * Performs an HTTP request that returns plain text instead of JSON.
+   * Used for endpoints like /metrics that return Prometheus-format text.
+   */
+  private async _requestText(
+    method: string,
+    path: string,
+    params?: Record<string, string | number | boolean>
+  ): Promise<string> {
+    const url = new URL(path, this.baseUrl);
+
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          url.searchParams.set(key, String(value));
+        }
+      });
+    }
+
+    const headers: Record<string, string> = {
+      "X-Agent-Id": this.agentId,
+    };
+
+    if (this.apiKey) {
+      headers["X-Kore-Key"] = this.apiKey;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+    try {
+      const response = await fetch(url.toString(), {
+        method,
+        headers,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        let errorDetail;
+        try {
+          errorDetail = await response.json();
+        } catch {
+          errorDetail = await response.text();
+        }
+
+        const message = typeof errorDetail === "object" && errorDetail.detail
+          ? errorDetail.detail
+          : String(errorDetail || response.statusText);
+
+        throw mapHttpError(response.status, message, errorDetail);
+      }
+
+      return await response.text();
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        throw new Error(`Request timeout after ${this.timeout}ms`);
+      }
+      throw error;
+    }
+  }
+
   // Core memory operations
   async save(input: MemorySaveRequest): Promise<MemorySaveResponse> {
     return this._request<MemorySaveResponse>("POST", "/save", input);
@@ -135,8 +201,25 @@ export class KoreClient {
     });
   }
 
+  async update(memoryId: number, input: MemoryUpdateRequest): Promise<MemorySaveResponse> {
+    return this._request<MemorySaveResponse>("PUT", `/memories/${memoryId}`, input);
+  }
+
   async delete(memoryId: number): Promise<boolean> {
     return this._request<boolean>("DELETE", `/memories/${memoryId}`);
+  }
+
+  // Archive
+  async archive(memoryId: number): Promise<ArchiveResponse> {
+    return this._request<ArchiveResponse>("POST", `/memories/${memoryId}/archive`);
+  }
+
+  async restore(memoryId: number): Promise<ArchiveResponse> {
+    return this._request<ArchiveResponse>("POST", `/memories/${memoryId}/restore`);
+  }
+
+  async getArchived(options?: { limit?: number; offset?: number }): Promise<MemorySearchResponse> {
+    return this._request<MemorySearchResponse>("GET", "/archive", undefined, options);
   }
 
   // Tags
@@ -213,5 +296,10 @@ export class KoreClient {
   // Utility
   async health(): Promise<HealthResponse> {
     return this._request<HealthResponse>("GET", "/health");
+  }
+
+  /** Returns Prometheus-format metrics as raw text. */
+  async metrics(): Promise<string> {
+    return this._requestText("GET", "/metrics");
   }
 }
