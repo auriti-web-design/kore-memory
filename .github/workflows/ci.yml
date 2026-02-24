@@ -36,4 +36,66 @@ jobs:
         run: pytest tests/ -v --tb=short
 
       - name: Check import works
-        run: python -c "from src.main import app; print('Import OK')"
+        run: python -c "from kore_memory.main import app; print('Import OK')"
+
+  test-semantic:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Cache pip + model
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.cache/huggingface
+          key: ${{ runner.os }}-semantic-${{ hashFiles('pyproject.toml') }}
+
+      - name: Install with semantic
+        run: pip install -e ".[semantic,dev]"
+
+      - name: Run tests with embeddings
+        run: pytest tests/ -v --tb=short
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install tools
+        run: pip install bandit pip-audit -e ".[dev]"
+
+      - name: Run bandit (SAST)
+        run: bandit -r kore_memory/ -c pyproject.toml || true
+
+      - name: Run pip-audit (CVE check)
+        run: pip-audit --strict || true
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff check
+        run: ruff check kore_memory/
+
+      - name: Run ruff format check
+        run: ruff format --check kore_memory/

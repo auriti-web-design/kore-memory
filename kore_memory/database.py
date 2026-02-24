@@ -1,20 +1,81 @@
 """
 Kore - Database layer
-Handles SQLite connection and schema initialization.
+Handles SQLite connection pool and schema initialization.
 """
 
 import os
 import sqlite3
+import threading
 from contextlib import contextmanager
 from pathlib import Path
+from queue import Empty, Queue
 
 from . import config
+
+_POOL_SIZE = 4
 
 
 def _get_db_path() -> Path:
     """Risolve il path del DB a runtime (supporta override via KORE_DB_PATH)."""
     # Controlla env var a runtime per supporto test con DB temporaneo
     return Path(os.getenv("KORE_DB_PATH", config.DEFAULT_DB_PATH))
+
+
+# ── Connection Pool ─────────────────────────────────────────────────────────
+
+class _ConnectionPool:
+    """Simple thread-safe SQLite connection pool."""
+
+    def __init__(self) -> None:
+        self._pools: dict[str, Queue] = {}
+        self._lock = threading.Lock()
+
+    def _get_pool(self, db_path: str) -> Queue:
+        with self._lock:
+            if db_path not in self._pools:
+                self._pools[db_path] = Queue(maxsize=_POOL_SIZE)
+            return self._pools[db_path]
+
+    def acquire(self, db_path: str) -> sqlite3.Connection:
+        pool = self._get_pool(db_path)
+        try:
+            conn = pool.get_nowait()
+            # Verifica che la connessione sia ancora valida
+            conn.execute("SELECT 1")
+            return conn
+        except Empty:
+            pass
+        except Exception:
+            pass
+        # Crea nuova connessione
+        conn = sqlite3.connect(db_path, check_same_thread=False)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+        return conn
+
+    def release(self, db_path: str, conn: sqlite3.Connection) -> None:
+        pool = self._get_pool(db_path)
+        try:
+            pool.put_nowait(conn)
+        except Exception:
+            # Pool pieno — chiudi la connessione
+            conn.close()
+
+    def clear(self) -> None:
+        """Chiudi tutte le connessioni nel pool (per test cleanup)."""
+        with self._lock:
+            for pool in self._pools.values():
+                while not pool.empty():
+                    try:
+                        conn = pool.get_nowait()
+                        conn.close()
+                    except Empty:
+                        break
+            self._pools.clear()
+
+
+_pool = _ConnectionPool()
 
 
 def init_db() -> None:
@@ -50,6 +111,7 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_memories_category  ON memories (category);
             CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories (importance DESC);
             CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories (created_at DESC);
+            CREATE INDEX IF NOT EXISTS idx_memories_expires ON memories (expires_at) WHERE expires_at IS NOT NULL;
 
             CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts
             USING fts5(content, category, content='memories', content_rowid='id', tokenize='unicode61');
@@ -98,15 +160,15 @@ def init_db() -> None:
         cols = {row[1] for row in conn.execute("PRAGMA table_info(memories)").fetchall()}
         if "expires_at" not in cols:
             conn.execute("ALTER TABLE memories ADD COLUMN expires_at TEXT DEFAULT NULL")
+        if "archived_at" not in cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN archived_at TEXT DEFAULT NULL")
 
 
 @contextmanager
 def get_connection():
-    """Yield a thread-safe SQLite connection with WAL mode enabled."""
-    conn = sqlite3.connect(_get_db_path(), check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
+    """Yield a pooled thread-safe SQLite connection with WAL mode enabled."""
+    db_path = str(_get_db_path())
+    conn = _pool.acquire(db_path)
     try:
         yield conn
         conn.commit()
@@ -114,4 +176,4 @@ def get_connection():
         conn.rollback()
         raise
     finally:
-        conn.close()
+        _pool.release(db_path, conn)

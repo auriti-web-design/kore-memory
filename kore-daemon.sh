@@ -10,12 +10,20 @@ PID_FILE="$DIR/logs/kore.pid"
 LOG_FILE="$DIR/logs/server.log"
 mkdir -p logs
 
-# Load .env
+# Load .env (safe: only reads KEY=VALUE lines, ignores comments and commands)
 if [ -f "$DIR/.env" ]; then
-    set -a
-    # shellcheck disable=SC1091
-    source "$DIR/.env"
-    set +a
+    while IFS='=' read -r key value; do
+        # Skip comments, empty lines, and lines without =
+        case "$key" in
+            '#'*|'') continue ;;
+        esac
+        # Remove surrounding quotes from value
+        value="${value%\"}"
+        value="${value#\"}"
+        value="${value%\'}"
+        value="${value#\'}"
+        export "$key=$value"
+    done < "$DIR/.env"
 fi
 
 # Check if already running

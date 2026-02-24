@@ -35,6 +35,19 @@ class MemorySaveRequest(BaseModel):
         return v.strip()
 
 
+class MemoryUpdateRequest(BaseModel):
+    content: str | None = Field(None, min_length=3, max_length=4000)
+    category: Category | None = None
+    importance: int | None = Field(None, ge=1, le=5)
+
+    @field_validator("content")
+    @classmethod
+    def content_must_not_be_blank(cls, v: str | None) -> str | None:
+        if v is not None and not v.strip():
+            raise ValueError("Content cannot be blank")
+        return v.strip() if v else v
+
+
 class MemoryRecord(BaseModel):
     id: int
     content: str
@@ -118,3 +131,8 @@ class CompressRunResponse(BaseModel):
     memories_merged: int
     new_records_created: int
     message: str = "Compression complete"
+
+
+class ArchiveResponse(BaseModel):
+    success: bool
+    message: str = ""

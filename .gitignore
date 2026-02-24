@@ -40,6 +40,9 @@ htmlcov/
 # Piani di lavoro
 PLAN-*.md
 
+# Claude Code (local only)
+CLAUDE.md
+
 # SDK JS
 sdk/js/node_modules/
 sdk/js/dist/

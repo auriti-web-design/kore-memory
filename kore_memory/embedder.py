@@ -6,7 +6,9 @@ Model: paraphrase-multilingual-MiniLM-L12-v2 (~120MB, supports Italian + English
 
 from __future__ import annotations
 
+import base64
 import json
+import struct
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -17,6 +19,14 @@ from . import config
 
 MODEL_NAME = config.EMBED_MODEL
 MAX_EMBED_CHARS = config.MAX_EMBED_CHARS
+
+# --- numpy availability (optional, installed with [semantic]) ---
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    np = None  # type: ignore[assignment]
+    _HAS_NUMPY = False
 
 
 @lru_cache(maxsize=1)
@@ -50,12 +60,26 @@ def embed_batch(texts: list[str]) -> list[list[float]]:
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
     """Dot product of two normalized vectors = cosine similarity."""
+    if _HAS_NUMPY:
+        return float(np.dot(a, b))
     return sum(x * y for x, y in zip(a, b))
 
 
+# --- Serialization: base64-encoded struct.pack (~50% smaller than JSON) ---
+
 def serialize(vector: list[float]) -> str:
-    return json.dumps(vector)
+    """Serialize a float vector to a compact base64 string."""
+    binary = struct.pack(f'{len(vector)}f', *vector)
+    return base64.b64encode(binary).decode('ascii')
 
 
 def deserialize(blob: str) -> list[float]:
-    return json.loads(blob)
+    """
+    Deserialize a vector from either base64 binary or legacy JSON format.
+    Auto-detects format: if the string starts with '[' it's JSON, otherwise base64.
+    """
+    if blob.startswith('['):  # Legacy JSON format
+        return json.loads(blob)
+    binary = base64.b64decode(blob)
+    count = len(binary) // 4
+    return list(struct.unpack(f'{count}f', binary))

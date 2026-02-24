@@ -3,6 +3,7 @@ Kore — FastAPI application
 Memory layer with decay, auto-scoring, compression, semantic search, and auth.
 """
 
+import secrets
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -29,6 +30,7 @@ from .models import (
     MemorySaveRequest,
     MemorySaveResponse,
     MemorySearchResponse,
+    MemoryUpdateRequest,
     RelationRequest,
     RelationResponse,
     TagRequest,
@@ -37,24 +39,45 @@ from .models import (
 from .repository import (
     add_relation,
     add_tags,
+    archive_memory,
     cleanup_expired,
     delete_memory,
     export_memories,
+    get_archived,
     get_relations,
     get_tags,
     get_timeline,
     import_memories,
     remove_tags,
+    restore_memory,
     run_decay_pass,
     save_memory,
+    save_memory_batch,
     search_by_tag,
     search_memories,
+    update_memory,
 )
 
 
 # ── Rate limiter in-memory ───────────────────────────────────────────────────
 
+import threading as _rl_threading
+
 _rate_buckets: dict[str, list[float]] = defaultdict(list)
+_rate_lock = _rl_threading.Lock()
+_rate_last_cleanup = 0.0
+
+
+def _get_client_ip(request: Request) -> str:
+    """Extract client IP, respecting X-Forwarded-For behind trusted proxies."""
+    forwarded = request.headers.get("X-Forwarded-For")
+    if forwarded:
+        # First IP in the chain is the original client
+        return forwarded.split(",")[0].strip()
+    real_ip = request.headers.get("X-Real-IP")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "unknown"
 
 
 def _check_rate_limit(client_ip: str, path: str) -> None:
@@ -66,39 +89,56 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
     now = time.monotonic()
     key = f"{client_ip}:{path}"
 
-    # Pulisci richieste scadute
-    _rate_buckets[key] = [ts for ts in _rate_buckets[key] if now - ts < window]
+    with _rate_lock:
+        # Cleanup periodico di bucket vecchi (ogni 60s) — previene memory leak
+        global _rate_last_cleanup
+        if now - _rate_last_cleanup > 60:
+            stale_keys = [k for k, timestamps in _rate_buckets.items()
+                          if not timestamps or now - timestamps[-1] > window]
+            for k in stale_keys:
+                del _rate_buckets[k]
+            _rate_last_cleanup = now
 
-    if len(_rate_buckets[key]) >= max_requests:
-        raise HTTPException(status_code=429, detail="Rate limit exceeded. Retry later.")
+        # Pulisci richieste scadute per questo bucket
+        _rate_buckets[key] = [ts for ts in _rate_buckets[key] if now - ts < window]
 
-    _rate_buckets[key].append(now)
+        if len(_rate_buckets[key]) >= max_requests:
+            raise HTTPException(status_code=429, detail="Rate limit exceeded. Retry later.")
+
+        _rate_buckets[key].append(now)
 
 
 # ── Security headers middleware ──────────────────────────────────────────────
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
-    # CSP allargato per la dashboard (inline styles/scripts + fetch verso le API)
-    _DASHBOARD_CSP = (
-        "default-src 'self'; "
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
-        "font-src 'self' https://fonts.gstatic.com; "
-        "script-src 'self' 'unsafe-inline'; "
-        "connect-src 'self'; "
-        "img-src 'self' data:; "
-        "frame-ancestors 'none'"
-    )
     _API_CSP = "default-src 'none'; frame-ancestors 'none'"
 
+    @staticmethod
+    def _dashboard_csp(nonce: str) -> str:
+        """Build CSP for dashboard with per-request nonce instead of unsafe-inline scripts."""
+        return (
+            "default-src 'self'; "
+            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+            "font-src 'self' https://fonts.gstatic.com; "
+            f"script-src 'nonce-{nonce}'; "
+            "connect-src 'self'; "
+            "img-src 'self' data:; "
+            "frame-ancestors 'none'"
+        )
+
     async def dispatch(self, request: Request, call_next) -> Response:
+        # Generate a per-request nonce and store it for the dashboard endpoint
+        nonce = secrets.token_urlsafe(16)
+        request.state.csp_nonce = nonce
+
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-        # CSP allargato solo per la dashboard, restrittivo per le API
+        # CSP with nonce for the dashboard, restrictive for APIs
         if request.url.path == "/dashboard":
-            response.headers["Content-Security-Policy"] = self._DASHBOARD_CSP
+            response.headers["Content-Security-Policy"] = self._dashboard_csp(nonce)
         else:
             response.headers["Content-Security-Policy"] = self._API_CSP
         return response
@@ -130,7 +170,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
     allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE"],
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["X-Kore-Key", "X-Agent-Id", "Content-Type"],
 )
 
@@ -160,7 +200,7 @@ def save(
     agent_id: str = _Agent,
 ) -> MemorySaveResponse:
     """Save a memory scoped to the requesting agent. Importance is auto-scored if omitted."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/save")
+    _check_rate_limit(_get_client_ip(request), "/save")
     memory_id, importance = save_memory(req, agent_id=agent_id)
     return MemorySaveResponse(id=memory_id, importance=importance)
 
@@ -172,12 +212,10 @@ def save_batch(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> BatchSaveResponse:
-    """Salva più memorie in una sola richiesta (max 100)."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/save")
-    saved = []
-    for mem in req.memories:
-        memory_id, importance = save_memory(mem, agent_id=agent_id)
-        saved.append(MemorySaveResponse(id=memory_id, importance=importance))
+    """Salva più memorie in una sola richiesta (max 100). Usa batch embedding."""
+    _check_rate_limit(_get_client_ip(request), "/save")
+    results = save_memory_batch(req.memories, agent_id=agent_id)
+    saved = [MemorySaveResponse(id=mid, importance=imp) for mid, imp in results]
     return BatchSaveResponse(saved=saved, total=len(saved))
 
 
@@ -195,7 +233,7 @@ def search(
     offset: int = Query(0, ge=0, deprecated=True, description="Deprecated: use cursor"),
 ) -> MemorySearchResponse:
     """Semantic search scoped to the requesting agent, with cursor-based pagination."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/search")
+    _check_rate_limit(_get_client_ip(request), "/search")
     
     # Parse cursor (base64 encoded tuple of decay_score, id)
     cursor_tuple = None
@@ -209,15 +247,15 @@ def search(
             raise HTTPException(400, "Invalid cursor format")
     
     # Execute search with cursor
-    results, next_cursor = search_memories(
-        query=q, 
-        limit=limit, 
-        category=category, 
-        semantic=semantic, 
+    results, next_cursor, total_count = search_memories(
+        query=q,
+        limit=limit,
+        category=category,
+        semantic=semantic,
         agent_id=agent_id,
         cursor=cursor_tuple,
     )
-    
+
     # Encode next cursor
     cursor_str = None
     if next_cursor:
@@ -226,10 +264,10 @@ def search(
         cursor_str = base64.b64encode(
             json.dumps(next_cursor).encode('utf-8')
         ).decode('utf-8')
-    
+
     return MemorySearchResponse(
         results=results,
-        total=len(results),
+        total=total_count,
         cursor=cursor_str,
         has_more=next_cursor is not None,
         offset=offset,  # Keep for backwards compat
@@ -247,7 +285,7 @@ def timeline(
     offset: int = Query(0, ge=0, deprecated=True, description="Deprecated: use cursor"),
 ) -> MemorySearchResponse:
     """Chronological memory history for a subject, scoped to agent, with cursor-based pagination."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/timeline")
+    _check_rate_limit(_get_client_ip(request), "/timeline")
     
     # Parse cursor
     cursor_tuple = None
@@ -260,8 +298,8 @@ def timeline(
         except Exception:
             raise HTTPException(400, "Invalid cursor format")
     
-    results, next_cursor = get_timeline(subject=subject, limit=limit, agent_id=agent_id, cursor=cursor_tuple)
-    
+    results, next_cursor, total_count = get_timeline(subject=subject, limit=limit, agent_id=agent_id, cursor=cursor_tuple)
+
     # Encode next cursor
     cursor_str = None
     if next_cursor:
@@ -270,14 +308,27 @@ def timeline(
         cursor_str = base64.b64encode(
             json.dumps(next_cursor).encode('utf-8')
         ).decode('utf-8')
-    
+
     return MemorySearchResponse(
         results=results,
-        total=len(results),
+        total=total_count,
         cursor=cursor_str,
         has_more=next_cursor is not None,
         offset=offset,
     )
+
+
+@app.put("/memories/{memory_id}", response_model=MemorySaveResponse)
+def update(
+    memory_id: int,
+    req: MemoryUpdateRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemorySaveResponse:
+    """Update a memory's content, category, or importance. Agents can only update their own memories."""
+    if not update_memory(memory_id, req, agent_id=agent_id):
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return MemorySaveResponse(id=memory_id, importance=req.importance or 0, message="Memory updated")
 
 
 @app.delete("/memories/{memory_id}", status_code=204)
@@ -377,7 +428,7 @@ def decay_run(
     agent_id: str = _Agent,
 ) -> DecayRunResponse:
     """Recalculate decay scores for agent's memories."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/decay/run")
+    _check_rate_limit(_get_client_ip(request), "/decay/run")
     updated = run_decay_pass(agent_id=agent_id)
     return DecayRunResponse(updated=updated)
 
@@ -389,7 +440,7 @@ def compress(
     agent_id: str = _Agent,
 ) -> CompressRunResponse:
     """Merge similar memories for this agent."""
-    _check_rate_limit(request.client.host if request.client else "unknown", "/compress")
+    _check_rate_limit(_get_client_ip(request), "/compress")
     from .compressor import run_compression
     result = run_compression(agent_id=agent_id)
     return CompressRunResponse(
@@ -432,12 +483,66 @@ def import_data(
     return MemoryImportResponse(imported=count)
 
 
+# ── Archive endpoints ──────────────────────────────────────────────────────
+
+@app.post("/memories/{memory_id}/archive", status_code=200)
+def archive(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> dict:
+    if not archive_memory(memory_id, agent_id=agent_id):
+        raise HTTPException(404, "Memory not found or already archived")
+    return {"success": True, "message": "Memory archived"}
+
+
+@app.post("/memories/{memory_id}/restore", status_code=200)
+def restore(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> dict:
+    if not restore_memory(memory_id, agent_id=agent_id):
+        raise HTTPException(404, "Memory not found or not archived")
+    return {"success": True, "message": "Memory restored"}
+
+
+@app.get("/archive", response_model=MemorySearchResponse)
+def archive_list(limit: int = Query(50, ge=1, le=100), _: str = _Auth, agent_id: str = _Agent) -> MemorySearchResponse:
+    results = get_archived(agent_id=agent_id, limit=limit)
+    return MemorySearchResponse(results=results, total=len(results))
+
+
+# ── Metrics ───────────────────────────────────────────────────────────────────
+
+@app.get("/metrics", include_in_schema=False)
+def metrics(agent_id: str | None = Query(None)) -> Response:
+    """Prometheus-compatible metrics endpoint."""
+    from .repository import get_stats
+    stats = get_stats(agent_id)
+    lines = [
+        "# HELP kore_memories_total Total memory records",
+        "# TYPE kore_memories_total gauge",
+        f'kore_memories_total {stats["total_memories"]}',
+        "# HELP kore_memories_active Active (non-decayed) memory records",
+        "# TYPE kore_memories_active gauge",
+        f'kore_memories_active {stats["active_memories"]}',
+        "# HELP kore_memories_archived Archived memory records",
+        "# TYPE kore_memories_archived gauge",
+        f'kore_memories_archived {stats["archived_memories"]}',
+        "# HELP kore_db_size_bytes Database file size in bytes",
+        "# TYPE kore_db_size_bytes gauge",
+        f'kore_db_size_bytes {stats["db_size_bytes"]}',
+    ]
+    return Response(content="\n".join(lines) + "\n", media_type="text/plain; charset=utf-8")
+
+
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
 @app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
-async def dashboard() -> HTMLResponse:
-    """Dashboard web per gestione memorie su localhost."""
-    return HTMLResponse(content=get_dashboard_html())
+async def dashboard(request: Request) -> HTMLResponse:
+    """Dashboard web per gestione memorie. Richiede auth se non in local-only mode."""
+    from .auth import _is_local, _local_only_mode
+    if not (_local_only_mode() and _is_local(request)):
+        # Non-local: richiede autenticazione
+        await require_auth(request, request.headers.get("X-Kore-Key"))
+    html = get_dashboard_html()
+    # Inject CSP nonce into script tags
+    nonce = getattr(request.state, "csp_nonce", "")
+    html = html.replace("<script>", f'<script nonce="{nonce}">')
+    return HTMLResponse(content=html)
 
 
 # ── Utility ───────────────────────────────────────────────────────────────────

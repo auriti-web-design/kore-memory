@@ -63,7 +63,8 @@ def _is_local(request: Request) -> bool:
 
 
 def _local_only_mode() -> bool:
-    # Controlla env var a runtime per supporto test
+    # Rilegge a runtime per supporto override nei test (KORE_LOCAL_ONLY=1)
+    # Default "1" = skip auth per localhost (coerente con config.LOCAL_ONLY)
     return os.getenv("KORE_LOCAL_ONLY", "1") == "1"
 
 

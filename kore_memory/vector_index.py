@@ -14,6 +14,14 @@ from __future__ import annotations
 import threading
 from dataclasses import dataclass, field
 
+# --- numpy availability (optional, installed with [semantic]) ---
+try:
+    import numpy as np
+    _HAS_NUMPY = True
+except ImportError:
+    np = None  # type: ignore[assignment]
+    _HAS_NUMPY = False
+
 
 @dataclass
 class _AgentCache:
@@ -70,17 +78,34 @@ class VectorIndex:
         """
         Ricerca vettoriale batch: calcola similarità coseno su tutti i vettori
         e restituisce i top-k risultati come [(memory_id, score), ...].
+
+        Uses numpy batch dot product when available for ~10-50x speedup.
+        Falls back to pure Python if numpy is not installed.
         """
         vectors = self.load_vectors(agent_id, category)
         if not vectors:
             return []
 
-        # Calcolo batch dot product (vettori già normalizzati)
-        scored: list[tuple[int, float]] = []
-        for mem_id, vec in vectors.items():
-            sim = sum(a * b for a, b in zip(query_vec, vec))
-            if sim >= min_similarity:
-                scored.append((mem_id, sim))
+        mem_ids = list(vectors.keys())
+
+        if _HAS_NUMPY and mem_ids:
+            # Batch computation: build matrix and compute all dot products at once
+            matrix = np.array([vectors[mid] for mid in mem_ids], dtype=np.float32)
+            query_arr = np.array(query_vec, dtype=np.float32)
+            similarities = matrix @ query_arr  # shape: (n,)
+
+            scored: list[tuple[int, float]] = [
+                (mem_ids[i], float(similarities[i]))
+                for i in range(len(mem_ids))
+                if similarities[i] >= min_similarity
+            ]
+        else:
+            # Pure Python fallback
+            scored = []
+            for mem_id, vec in vectors.items():
+                sim = sum(a * b for a, b in zip(query_vec, vec))
+                if sim >= min_similarity:
+                    scored.append((mem_id, sim))
 
         # Ordina per score decrescente e limita
         scored.sort(key=lambda x: x[1], reverse=True)
