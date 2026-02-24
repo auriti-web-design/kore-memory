@@ -899,7 +899,7 @@ tr:hover { background: var(--bg-card-hover); }
             <button class="btn" id="btn-filters" aria-expanded="false" aria-controls="search-filters">Filters</button>
           </div>
           <div class="form-group" style="flex:0 0 auto">
-            <button class="btn btn-primary" id="btn-search" onclick="doSearch()">Search</button>
+            <button class="btn btn-primary" id="btn-search">Search</button>
           </div>
         </div>
         <!-- Filters panel -->
@@ -936,7 +936,7 @@ tr:hover { background: var(--bg-card-hover); }
               <input type="date" id="filter-date-to" aria-label="Filter to date">
             </div>
             <div class="form-group" style="flex:0 0 auto">
-              <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
+              <button class="btn btn-sm" id="btn-clear-filters">Clear</button>
             </div>
           </div>
         </div>
@@ -946,8 +946,8 @@ tr:hover { background: var(--bg-card-hover); }
           <span class="icon" aria-hidden="true">&#9776;</span> Results
           <small id="search-total" style="color:var(--text-dim);font-size:12px;margin-left:8px"></small>
           <div style="margin-left:auto;display:flex;gap:8px">
-            <button class="btn btn-sm" onclick="exportSearchCSV()" title="Export results as CSV">CSV</button>
-            <button class="btn btn-sm" onclick="exportSearchJSON()" title="Export results as JSON">JSON</button>
+            <button class="btn btn-sm" id="btn-csv" title="Export results as CSV">CSV</button>
+            <button class="btn btn-sm" id="btn-json" title="Export results as JSON">JSON</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -957,8 +957,8 @@ tr:hover { background: var(--bg-card-hover); }
           </table>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn btn-sm" id="search-prev" onclick="searchPage(-1)" disabled aria-label="Previous page">&larr; Prev</button>
-          <button class="btn btn-sm" id="search-next" onclick="searchPage(1)" disabled aria-label="Next page">Next &rarr;</button>
+          <button class="btn btn-sm" id="search-prev" disabled aria-label="Previous page">&larr; Prev</button>
+          <button class="btn btn-sm" id="search-next" disabled aria-label="Next page">Next &rarr;</button>
         </div>
       </div>
       <!-- Salva -->
@@ -991,7 +991,7 @@ tr:hover { background: var(--bg-card-hover); }
             <input type="number" id="save-ttl" placeholder="e.g. 48" min="1" max="8760">
           </div>
           <div class="form-group">
-            <button class="btn btn-primary" id="btn-save" onclick="doSave()">Save</button>
+            <button class="btn btn-primary" id="btn-save">Save</button>
           </div>
         </div>
       </div>
@@ -1005,7 +1005,7 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="card-header"><span class="icon" aria-hidden="true">&#9906;</span> Search by Tag</div>
           <div class="form-row">
             <div class="form-group"><input type="text" id="tag-search-q" placeholder="Tag name..." aria-label="Tag search"></div>
-            <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" onclick="doTagSearch()">Search</button></div>
+            <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" id="btn-tag-search">Search</button></div>
           </div>
           <div id="tag-search-results" class="empty" style="margin-top:12px">
             <span class="empty-icon" aria-hidden="true">&#9856;</span>
@@ -1024,9 +1024,9 @@ tr:hover { background: var(--bg-card-hover); }
             <input type="text" id="tag-input" placeholder="tag1, tag2, tag3">
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" onclick="doAddTags()">Add Tags</button>
-            <button class="btn btn-danger" onclick="doRemoveTags()">Remove Tags</button>
-            <button class="btn" onclick="doGetTags()">Get Tags</button>
+            <button class="btn btn-primary" id="btn-add-tags">Add Tags</button>
+            <button class="btn btn-danger" id="btn-remove-tags">Remove Tags</button>
+            <button class="btn" id="btn-get-tags">Get Tags</button>
           </div>
           <div id="tag-manage-result" style="margin-top:12px" aria-live="polite"></div>
         </div>
@@ -1041,7 +1041,7 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="card-header"><span class="icon" aria-hidden="true">&#8644;</span> View Relations</div>
           <div class="form-row">
             <div class="form-group"><input type="number" id="rel-view-id" placeholder="Memory ID" aria-label="Memory ID for relations"></div>
-            <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" onclick="doGetRelations()">View</button></div>
+            <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" id="btn-get-relations">View</button></div>
           </div>
           <div id="rel-results" style="margin-top:12px" aria-live="polite"></div>
         </div>
@@ -1059,7 +1059,7 @@ tr:hover { background: var(--bg-card-hover); }
             <label for="rel-type">Relation Type</label>
             <input type="text" id="rel-type" value="related" placeholder="e.g. depends_on, related">
           </div>
-          <button class="btn btn-primary" onclick="doAddRelation()">Create</button>
+          <button class="btn btn-primary" id="btn-add-relation">Create</button>
         </div>
       </div>
     </div>
@@ -1071,7 +1071,7 @@ tr:hover { background: var(--bg-card-hover); }
         <div class="form-row">
           <div class="form-group" style="flex:3"><input type="text" id="timeline-subject" placeholder="Subject to trace..." aria-label="Timeline subject"></div>
           <div class="form-group" style="flex:0 0 80px"><input type="number" id="timeline-limit" value="20" min="1" max="50" aria-label="Timeline limit"></div>
-          <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" id="btn-timeline" onclick="doTimeline()">Trace</button></div>
+          <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" id="btn-timeline">Trace</button></div>
         </div>
       </div>
       <div id="timeline-results" aria-live="polite">
@@ -1089,7 +1089,7 @@ tr:hover { background: var(--bg-card-hover); }
       <div class="card">
         <div class="card-header">
           <span class="icon" aria-hidden="true">&#9998;</span> Archived Memories
-          <button class="btn btn-sm" style="margin-left:auto" onclick="loadArchive()">Refresh</button>
+          <button class="btn btn-sm" style="margin-left:auto" id="btn-refresh-archive">Refresh</button>
         </div>
         <div id="archive-list" aria-live="polite">
           <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
@@ -1107,7 +1107,7 @@ tr:hover { background: var(--bg-card-hover); }
             <p>Recalculate decay scores using Ebbinghaus forgetting curve</p>
             <div class="maint-result" id="decay-result" aria-live="polite"></div>
           </div>
-          <button class="btn btn-primary" id="btn-decay" onclick="doDecay()">Run Decay</button>
+          <button class="btn btn-primary" id="btn-decay">Run Decay</button>
         </div>
         <div class="maint-row">
           <div class="maint-info">
@@ -1115,7 +1115,7 @@ tr:hover { background: var(--bg-card-hover); }
             <p>Merge similar memories (cosine similarity &gt; 0.88)</p>
             <div class="maint-result" id="compress-result" aria-live="polite"></div>
           </div>
-          <button class="btn btn-primary" id="btn-compress" onclick="doCompress()">Run Compress</button>
+          <button class="btn btn-primary" id="btn-compress">Run Compress</button>
         </div>
         <div class="maint-row">
           <div class="maint-info">
@@ -1123,7 +1123,7 @@ tr:hover { background: var(--bg-card-hover); }
             <p>Remove expired memories (TTL)</p>
             <div class="maint-result" id="cleanup-result" aria-live="polite"></div>
           </div>
-          <button class="btn btn-primary" id="btn-cleanup" onclick="doCleanup()">Run Cleanup</button>
+          <button class="btn btn-primary" id="btn-cleanup">Run Cleanup</button>
         </div>
       </div>
     </div>
@@ -1169,8 +1169,8 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="card-header"><span class="icon" aria-hidden="true">&#8681;</span> Export</div>
           <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Download all active memories</p>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-primary" id="btn-export-json" onclick="doExport('json')">Export JSON</button>
-            <button class="btn" id="btn-export-csv" onclick="doExport('csv')">Export CSV</button>
+            <button class="btn btn-primary" id="btn-export-json">Export JSON</button>
+            <button class="btn" id="btn-export-csv">Export CSV</button>
           </div>
         </div>
         <div class="card">
@@ -1178,7 +1178,7 @@ tr:hover { background: var(--bg-card-hover); }
           <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Upload a previously exported JSON file</p>
           <input type="file" id="import-file" accept=".json" style="margin-bottom:12px" aria-label="Select JSON file to import">
           <br>
-          <button class="btn btn-primary" id="btn-import" onclick="doImport()">Import</button>
+          <button class="btn btn-primary" id="btn-import">Import</button>
           <div id="import-result" style="margin-top:12px;font-size:12px" aria-live="polite"></div>
         </div>
       </div>
@@ -1204,7 +1204,7 @@ tr:hover { background: var(--bg-card-hover); }
     <div class="kbd-row"><span>Go to Archive</span><kbd>6</kbd></div>
     <div class="kbd-row"><span>Toggle theme</span><kbd>T</kbd></div>
     <div class="kbd-row"><span>Show shortcuts</span><kbd>?</kbd></div>
-    <div style="margin-top:16px;text-align:center"><button class="btn btn-sm" onclick="toggleKbd()">Close</button></div>
+    <div style="margin-top:16px;text-align:center"><button class="btn btn-sm" id="btn-close-kbd">Close</button></div>
   </div>
 </div>
 
@@ -1443,12 +1443,12 @@ async function doSearch(offset) {
       tbody.innerHTML = results.map(r =>
         '<tr class="memory-row" data-id="' + r.id + '">' +
         '<td style="color:var(--text-dim)">#' + r.id + '</td>' +
-        '<td class="memory-content-cell" onclick="toggleDetail(' + r.id + ')" style="cursor:pointer" title="Click to expand">' + esc(truncate(r.content)) + '</td>' +
+        '<td class="memory-content-cell" data-action="toggle-detail" data-id="' + r.id + '" style="cursor:pointer" title="Click to expand">' + esc(truncate(r.content)) + '</td>' +
         '<td><span class="badge badge-cat">' + esc(r.category) + '</span></td>' +
         '<td>' + stars(r.importance) + '</td>' +
         '<td>' + decayBar(r.decay_score) + '</td>' +
         '<td style="font-size:11px;color:var(--text-dim)">' + fmtDate(r.created_at) + '</td>' +
-        '<td style="white-space:nowrap"><button class="btn btn-sm" onclick="startEdit(' + r.id + ', event)" title="Edit">Edit</button> <button class="btn btn-danger btn-sm" onclick="doDelete(' + r.id + ', this)" title="Delete">Del</button></td>' +
+        '<td style="white-space:nowrap"><button class="btn btn-sm" data-action="start-edit" data-id="' + r.id + '" title="Edit">Edit</button> <button class="btn btn-danger btn-sm" data-action="delete" data-id="' + r.id + '" title="Delete">Del</button></td>' +
         '</tr>' +
         '<tr class="memory-detail-row" id="detail-' + r.id + '" style="display:none"><td colspan="7">' +
         '<div class="memory-detail open">' +
@@ -1495,7 +1495,7 @@ function startEdit(id, event) {
       '<option value="' + c + '"' + (c === mem.category ? ' selected' : '') + '>' + c + '</option>'
     ).join('') + '</select></div>' +
     '<div class="form-group"><label>Importance</label><input type="number" class="inline-edit" id="edit-imp-' + id + '" value="' + mem.importance + '" min="1" max="5"></div>' +
-    '<div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary btn-sm" onclick="saveEdit(' + id + ')">Save</button> <button class="btn btn-sm" onclick="cancelEdit(' + id + ')">Cancel</button></div></div>';
+    '<div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary btn-sm" data-action="save-edit" data-id="' + id + '">Save</button> <button class="btn btn-sm" data-action="cancel-edit" data-id="' + id + '">Cancel</button></div></div>';
 }
 
 async function saveEdit(id) {
@@ -1569,12 +1569,12 @@ async function doSave() {
 }
 
 /* ── Delete ────────────────────────────────────────────────────────── */
-async function doDelete(id, btn) {
+async function doDelete(id, triggerEl) {
   if (!confirm('Delete memory #' + id + '?')) return;
   try {
     await api('/memories/' + id, { method: 'DELETE' });
     toast('Memory #' + id + ' deleted');
-    btn.closest('tr').remove();
+    if (triggerEl) triggerEl.closest('tr').remove();
     const detail = document.getElementById('detail-' + id);
     if (detail) detail.remove();
   } catch (e) { toast(e.message, 'error'); }
@@ -1695,7 +1695,7 @@ async function loadArchive() {
     div.innerHTML = '<table aria-label="Archived memories"><thead><tr><th>ID</th><th>Content</th><th>Category</th><th>Importance</th><th>Created</th><th></th></tr></thead><tbody>' +
       data.results.map(r =>
         '<tr><td>#' + r.id + '</td><td>' + esc(truncate(r.content)) + '</td><td><span class="badge badge-cat">' + esc(r.category) + '</span></td><td>' + stars(r.importance) + '</td><td style="font-size:11px;color:var(--text-dim)">' + fmtDate(r.created_at) + '</td>' +
-        '<td><button class="btn btn-sm btn-primary" onclick="doRestore(' + r.id + ')">Restore</button></td></tr>'
+        '<td><button class="btn btn-sm btn-primary" data-action="restore" data-id="' + r.id + '">Restore</button></td></tr>'
       ).join('') + '</tbody></table>';
   } catch (e) {
     div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#9888;</span><div class="empty-title">Error loading archive</div>' + esc(e.message) + '</div>';
@@ -1860,6 +1860,45 @@ async function doImport() {
   } catch (e) { toast(e.message, 'error'); }
   finally { setLoading('btn-import', false); }
 }
+
+/* ── Button event listeners (CSP-compliant, no inline onclick) ──── */
+document.getElementById('btn-search').addEventListener('click', () => doSearch());
+document.getElementById('btn-clear-filters').addEventListener('click', clearFilters);
+document.getElementById('btn-csv').addEventListener('click', exportSearchCSV);
+document.getElementById('btn-json').addEventListener('click', exportSearchJSON);
+document.getElementById('search-prev').addEventListener('click', () => searchPage(-1));
+document.getElementById('search-next').addEventListener('click', () => searchPage(1));
+document.getElementById('btn-save').addEventListener('click', doSave);
+document.getElementById('btn-tag-search').addEventListener('click', doTagSearch);
+document.getElementById('btn-add-tags').addEventListener('click', doAddTags);
+document.getElementById('btn-remove-tags').addEventListener('click', doRemoveTags);
+document.getElementById('btn-get-tags').addEventListener('click', doGetTags);
+document.getElementById('btn-get-relations').addEventListener('click', doGetRelations);
+document.getElementById('btn-add-relation').addEventListener('click', doAddRelation);
+document.getElementById('btn-timeline').addEventListener('click', doTimeline);
+document.getElementById('btn-refresh-archive').addEventListener('click', loadArchive);
+document.getElementById('btn-decay').addEventListener('click', doDecay);
+document.getElementById('btn-compress').addEventListener('click', doCompress);
+document.getElementById('btn-cleanup').addEventListener('click', doCleanup);
+document.getElementById('btn-export-json').addEventListener('click', () => doExport('json'));
+document.getElementById('btn-export-csv').addEventListener('click', () => doExport('csv'));
+document.getElementById('btn-import').addEventListener('click', doImport);
+document.getElementById('btn-close-kbd').addEventListener('click', toggleKbd);
+
+/* ── Event delegation for dynamic content ─────────────────────────── */
+document.addEventListener('click', function(e) {
+  const el = e.target.closest('[data-action]');
+  if (!el) return;
+  const action = el.dataset.action;
+  const id = parseInt(el.dataset.id);
+
+  if (action === 'toggle-detail') { toggleDetail(id); }
+  else if (action === 'start-edit') { startEdit(id, e); }
+  else if (action === 'delete') { doDelete(id, el); }
+  else if (action === 'save-edit') { saveEdit(id); }
+  else if (action === 'cancel-edit') { cancelEdit(id); }
+  else if (action === 'restore') { doRestore(id); }
+});
 
 /* ── Init ──────────────────────────────────────────────────────────── */
 loadOverview();
