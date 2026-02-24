@@ -713,3 +713,11 @@ MIT © [Juan Auriti](https://github.com/auriti-web-design)
 <br/>
 <sub>Developed and battle-tested with <a href="https://openclaw.ai">OpenClaw</a> — the personal AI agent platform.</sub>
 </div>
+
+---
+
+<p align="center">
+  <a href="https://buymeacoffee.com/auritidesign">
+    <img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee" />
+  </a>
+</p>
