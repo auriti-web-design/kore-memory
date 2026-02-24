@@ -9,7 +9,6 @@ Scoring factors:
   4. Uniqueness           — if similar memories exist with high importance, inherit it
 """
 
-import re
 
 # Keywords that signal high importance
 HIGH_IMPORTANCE_KEYWORDS = {

@@ -8,7 +8,6 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
-
 Category = Literal[
     "general",
     "project",
@@ -136,3 +135,45 @@ class CompressRunResponse(BaseModel):
 class ArchiveResponse(BaseModel):
     success: bool
     message: str = ""
+
+
+class AutoTuneResponse(BaseModel):
+    boosted: int
+    reduced: int
+    message: str = "Auto-tune complete"
+
+
+class ScoringStatsResponse(BaseModel):
+    total: int
+    distribution: dict[str, int]  # importance level -> count
+    avg_importance: float
+    avg_access_count: float
+    never_accessed_30d: int
+    frequently_accessed: int
+
+
+class SessionCreateRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=128)
+    title: str | None = Field(None, max_length=500)
+
+
+class SessionResponse(BaseModel):
+    id: str
+    agent_id: str
+    title: str | None = None
+    created_at: datetime
+    ended_at: datetime | None = None
+    memory_count: int = 0
+
+
+class SessionSummaryResponse(BaseModel):
+    session_id: str
+    agent_id: str
+    title: str | None = None
+    created_at: str
+    ended_at: str | None = None
+    memory_count: int = 0
+    categories: list[str] = []
+    avg_importance: float = 0.0
+    first_memory: str | None = None
+    last_memory: str | None = None

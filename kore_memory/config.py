@@ -47,6 +47,18 @@ MAX_EMBED_CHARS = int(os.getenv("KORE_MAX_EMBED_CHARS", "8000"))
 
 SIMILARITY_THRESHOLD = float(os.getenv("KORE_SIMILARITY_THRESHOLD", "0.88"))
 
+# ── Auto-tuner ───────────────────────────────────────────────────────────────
+
+AUTO_TUNE = os.getenv("KORE_AUTO_TUNE", "0") == "1"
+
+# ── Entity extraction ────────────────────────────────────────────────────────
+
+ENTITY_EXTRACTION = os.getenv("KORE_ENTITY_EXTRACTION", "0") == "1"
+
+# ── Audit log ────────────────────────────────────────────────────────────────
+
+AUDIT_LOG = os.getenv("KORE_AUDIT_LOG", "0") == "1"
+
 # ── Versione ──────────────────────────────────────────────────────────────────
 
-VERSION = "0.8.0"
+VERSION = "0.9.0"

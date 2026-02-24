@@ -20,10 +20,18 @@ def __getattr__(name: str):
 
         return KoreLangChainMemory
 
+    if name in ("extract_entities", "auto_tag_entities", "search_entities"):
+        from . import entities
+
+        return getattr(entities, name)
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 __all__ = [
     "KoreCrewAIMemory",
     "KoreLangChainMemory",
+    "extract_entities",
+    "auto_tag_entities",
+    "search_entities",
 ]

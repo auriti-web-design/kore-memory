@@ -17,7 +17,7 @@ from dataclasses import dataclass
 
 from . import config
 from .database import get_connection
-from .embedder import cosine_similarity, deserialize, embed, serialize
+from .embedder import cosine_similarity, deserialize
 from .models import MemorySaveRequest
 from .repository import _compress_lock, save_memory
 

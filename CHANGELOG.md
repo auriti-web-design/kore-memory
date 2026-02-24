@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.9.0] - 2026-02-24
+
+### Theme: "Intelligence"
+
+### Added
+- **Session/Conversation Tracking**: New `sessions` table, `X-Session-Id` header support, auto-create sessions on save. Endpoints: `POST /sessions`, `GET /sessions`, `GET /sessions/{id}/memories`, `GET /sessions/{id}/summary`, `POST /sessions/{id}/end`, `DELETE /sessions/{id}`. Sessions UI tab in dashboard.
+- **Memory Graph Visualization**: New "Graph" tab in dashboard with force-directed layout (vanilla JS canvas, zero dependencies). Nodes colored by category, sized by importance. Hover tooltips, edge labels, SVG export. Category filter support.
+- **Entity Extraction** (`kore-memory[nlp]`): Optional spaCy NER for PERSON, ORG, GPE, DATE, MONEY, PRODUCT entities. Regex fallback for emails, URLs, dates, monetary values (no extra deps). Auto-tagging with `entity:type:value` format. `GET /entities` endpoint. Enable with `KORE_ENTITY_EXTRACTION=1`.
+- **Importance Auto-Tuning**: Learns from access patterns — boosts frequently accessed memories (access_count >= 5), reduces never-accessed memories after 30 days. `POST /auto-tune`, `GET /stats/scoring` endpoints. Enable with `KORE_AUTO_TUNE=1`. Thread-safe with dedicated lock.
+- **Event Audit Log**: Persistent event logging to `event_logs` table. Captures all memory lifecycle events (save, delete, update, compress, decay, archive, restore). `GET /audit` endpoint with filters (event type, since, limit). Auto-cleanup support. Enable with `KORE_AUDIT_LOG=1`.
+- **Agent Discovery**: `GET /agents` endpoint lists all agent IDs with memory count and last activity. Dashboard agent selector now shows datalist with existing agents.
+- **Dashboard Sessions tab**: View sessions, session summary (categories, avg importance, memory count), session memories list.
+- 77 new tests (17 sessions + 20 auto-tuner + 17 audit + 23 entities), total: 242
+
+### Changed
+- `save_memory()` now accepts optional `session_id` parameter
+- Database schema: added `sessions` table, `event_logs` table, `session_id` column on memories
+- CSP fix: removed all 26 inline onclick handlers, replaced with addEventListener + event delegation
+
+---
+
 ## [0.8.0] - 2026-02-24
 
 **"Developer Experience" — Framework integrations, dashboard overhaul, CI/CD maturity.**

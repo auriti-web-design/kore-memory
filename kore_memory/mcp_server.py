@@ -299,8 +299,8 @@ def memory_import(
 @mcp.resource("kore://health")
 def health_resource() -> str:
     """Stato del server Kore."""
-    from .repository import _embeddings_available
     from . import config
+    from .repository import _embeddings_available
     return (
         f"Kore v{config.VERSION} — "
         f"semantic_search={'enabled' if _embeddings_available() else 'disabled'}"

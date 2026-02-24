@@ -30,7 +30,7 @@ except ImportError:
 
 
 @lru_cache(maxsize=1)
-def get_model() -> "SentenceTransformer":
+def get_model() -> SentenceTransformer:
     """Carica il modello una volta e lo tiene in cache."""
     from sentence_transformers import SentenceTransformer
     return SentenceTransformer(MODEL_NAME)

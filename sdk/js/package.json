@@ -1,6 +1,6 @@
 {
   "name": "kore-memory-client",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "JavaScript/TypeScript client for Kore Memory - the memory layer that thinks like a human",
   "type": "module",
   "main": "./dist/index.cjs",

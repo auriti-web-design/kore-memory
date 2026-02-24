@@ -144,6 +144,16 @@ def init_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_tags_tag ON memory_tags (tag);
 
+            -- Sessioni di conversazione
+            CREATE TABLE IF NOT EXISTS sessions (
+                id          TEXT    PRIMARY KEY,
+                agent_id    TEXT    NOT NULL DEFAULT 'default',
+                title       TEXT    DEFAULT NULL,
+                created_at  TEXT    NOT NULL DEFAULT (datetime('now')),
+                ended_at    TEXT    DEFAULT NULL
+            );
+            CREATE INDEX IF NOT EXISTS idx_sessions_agent ON sessions (agent_id);
+
             -- Relazioni tra memorie (grafo)
             CREATE TABLE IF NOT EXISTS memory_relations (
                 source_id   INTEGER NOT NULL REFERENCES memories(id) ON DELETE CASCADE,
@@ -154,6 +164,19 @@ def init_db() -> None:
             );
             CREATE INDEX IF NOT EXISTS idx_relations_source ON memory_relations (source_id);
             CREATE INDEX IF NOT EXISTS idx_relations_target ON memory_relations (target_id);
+
+            -- Audit / event log
+            CREATE TABLE IF NOT EXISTS event_logs (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                event       TEXT    NOT NULL,
+                agent_id    TEXT    NOT NULL DEFAULT 'default',
+                memory_id   INTEGER DEFAULT NULL,
+                data        TEXT    DEFAULT NULL,
+                created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+            );
+            CREATE INDEX IF NOT EXISTS idx_event_logs_agent   ON event_logs (agent_id);
+            CREATE INDEX IF NOT EXISTS idx_event_logs_event   ON event_logs (event);
+            CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs (created_at DESC);
         """)
 
         # Migrazione: aggiungi expires_at se mancante (DB pre-esistenti)
@@ -162,6 +185,8 @@ def init_db() -> None:
             conn.execute("ALTER TABLE memories ADD COLUMN expires_at TEXT DEFAULT NULL")
         if "archived_at" not in cols:
             conn.execute("ALTER TABLE memories ADD COLUMN archived_at TEXT DEFAULT NULL")
+        if "session_id" not in cols:
+            conn.execute("ALTER TABLE memories ADD COLUMN session_id TEXT DEFAULT NULL")
 
 
 @contextmanager

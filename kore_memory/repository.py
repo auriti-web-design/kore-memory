@@ -3,14 +3,13 @@ Kore — Repository layer
 All database operations, keeping business logic out of routes.
 """
 
-import threading
-from datetime import datetime, timedelta, timezone
-
 import os
+import threading
+from datetime import UTC, datetime, timedelta
 
-from .database import get_connection, _get_db_path
+from .database import _get_db_path, get_connection
 from .decay import compute_decay, effective_score, should_forget
-from .events import emit, MEMORY_SAVED, MEMORY_DELETED, MEMORY_UPDATED
+from .events import MEMORY_DELETED, MEMORY_SAVED, MEMORY_UPDATED, emit
 from .models import MemoryRecord, MemorySaveRequest, MemoryUpdateRequest
 from .scorer import auto_score
 
@@ -32,7 +31,7 @@ def _embeddings_available() -> bool:
     return _EMBEDDINGS_AVAILABLE
 
 
-def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int, int]:
+def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: str | None = None) -> tuple[int, int]:
     """
     Persist a new memory record scoped to agent_id.
     Auto-scores importance if not explicitly set.
@@ -54,13 +53,20 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
     # Calcola expires_at se TTL specificato
     expires_at = None
     if req.ttl_hours:
-        expires_at = (datetime.now(timezone.utc) + timedelta(hours=req.ttl_hours)).isoformat()
+        expires_at = (datetime.now(UTC) + timedelta(hours=req.ttl_hours)).isoformat()
 
     with get_connection() as conn:
+        # Auto-create session if session_id provided but doesn't exist
+        if session_id:
+            conn.execute(
+                "INSERT OR IGNORE INTO sessions (id, agent_id) VALUES (?, ?)",
+                (session_id, agent_id),
+            )
+
         cursor = conn.execute(
             """
-            INSERT INTO memories (agent_id, content, category, importance, embedding, expires_at)
-            VALUES (:agent_id, :content, :category, :importance, :embedding, :expires_at)
+            INSERT INTO memories (agent_id, content, category, importance, embedding, expires_at, session_id)
+            VALUES (:agent_id, :content, :category, :importance, :embedding, :expires_at, :session_id)
             """,
             {
                 "agent_id": agent_id,
@@ -69,6 +75,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
                 "importance": importance,
                 "embedding": embedding_blob,
                 "expires_at": expires_at,
+                "session_id": session_id,
             },
         )
         row_id = cursor.lastrowid
@@ -79,6 +86,16 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default") -> tuple[int,
         get_index().invalidate(agent_id)
 
     emit(MEMORY_SAVED, {"id": row_id, "agent_id": agent_id})
+
+    # Entity extraction (optional, enabled via KORE_ENTITY_EXTRACTION=1)
+    from . import config as _cfg
+    if _cfg.ENTITY_EXTRACTION:
+        from .integrations.entities import auto_tag_entities
+        try:
+            auto_tag_entities(row_id, req.content, agent_id)
+        except Exception:
+            pass  # graceful degradation
+
     return row_id, importance
 
 
@@ -114,7 +131,7 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
         for i, req in enumerate(reqs):
             expires_at = None
             if req.ttl_hours:
-                expires_at = (datetime.now(timezone.utc) + timedelta(hours=req.ttl_hours)).isoformat()
+                expires_at = (datetime.now(UTC) + timedelta(hours=req.ttl_hours)).isoformat()
 
             cursor = conn.execute(
                 """INSERT INTO memories (agent_id, content, category, importance, embedding, expires_at)
@@ -233,7 +250,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
             return True  # Nothing to update, but memory exists
 
         updates.append("updated_at = ?")
-        params.append(datetime.now(timezone.utc).isoformat())
+        params.append(datetime.now(UTC).isoformat())
         params.append(memory_id)
         params.append(agent_id)
 
@@ -306,7 +323,7 @@ def _run_decay_pass_inner(agent_id: str | None = None) -> int:
             params.append(agent_id)
         rows = conn.execute(sql, params).fetchall()
 
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     updates = []
     for row in rows:
         new_score = compute_decay(
@@ -572,6 +589,136 @@ def get_archived(agent_id: str = "default", limit: int = 50) -> list[MemoryRecor
     return [_row_to_record(r) for r in rows]
 
 
+# ── Sessions ─────────────────────────────────────────────────────────────────
+
+def create_session(session_id: str, agent_id: str = "default", title: str | None = None) -> dict:
+    """Create a new conversation session."""
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT OR IGNORE INTO sessions (id, agent_id, title) VALUES (?, ?, ?)",
+            (session_id, agent_id, title),
+        )
+        row = conn.execute("SELECT * FROM sessions WHERE id = ?", (session_id,)).fetchone()
+    return dict(row) if row else {}
+
+
+def list_sessions(agent_id: str = "default", limit: int = 50) -> list[dict]:
+    """List all sessions for an agent with memory count."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT s.id, s.agent_id, s.title, s.created_at, s.ended_at,
+                   COUNT(m.id) AS memory_count
+            FROM sessions s
+            LEFT JOIN memories m ON m.session_id = s.id AND m.agent_id = s.agent_id
+            WHERE s.agent_id = ?
+            GROUP BY s.id
+            ORDER BY s.created_at DESC
+            LIMIT ?
+            """,
+            (agent_id, limit),
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
+def get_session_memories(session_id: str, agent_id: str = "default") -> list[MemoryRecord]:
+    """Get all memories in a session."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT id, content, category, importance, decay_score,
+                   access_count, last_accessed, created_at, updated_at, NULL AS score
+            FROM memories
+            WHERE session_id = ? AND agent_id = ? AND compressed_into IS NULL
+            ORDER BY created_at ASC
+            """,
+            (session_id, agent_id),
+        ).fetchall()
+    return [_row_to_record(r) for r in rows]
+
+
+def end_session(session_id: str, agent_id: str = "default") -> bool:
+    """Mark a session as ended."""
+    with get_connection() as conn:
+        cursor = conn.execute(
+            "UPDATE sessions SET ended_at = datetime('now') WHERE id = ? AND agent_id = ? AND ended_at IS NULL",
+            (session_id, agent_id),
+        )
+        return cursor.rowcount > 0
+
+
+def delete_session(session_id: str, agent_id: str = "default") -> int:
+    """Delete a session and unlink its memories. Returns number of memories unlinked."""
+    with get_connection() as conn:
+        # Unlink memories from session (don't delete them)
+        cursor = conn.execute(
+            "UPDATE memories SET session_id = NULL WHERE session_id = ? AND agent_id = ?",
+            (session_id, agent_id),
+        )
+        unlinked = cursor.rowcount
+        conn.execute(
+            "DELETE FROM sessions WHERE id = ? AND agent_id = ?",
+            (session_id, agent_id),
+        )
+    return unlinked
+
+
+def get_session_summary(session_id: str, agent_id: str = "default") -> dict:
+    """Get a summary of a session (no LLM, just aggregation)."""
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT * FROM sessions WHERE id = ? AND agent_id = ?",
+            (session_id, agent_id),
+        ).fetchone()
+        if not row:
+            return {}
+
+        stats = conn.execute(
+            """
+            SELECT COUNT(*) AS memory_count,
+                   GROUP_CONCAT(DISTINCT category) AS categories,
+                   AVG(importance) AS avg_importance,
+                   MIN(created_at) AS first_memory,
+                   MAX(created_at) AS last_memory
+            FROM memories
+            WHERE session_id = ? AND agent_id = ? AND compressed_into IS NULL
+            """,
+            (session_id, agent_id),
+        ).fetchone()
+
+    return {
+        "session_id": row["id"],
+        "agent_id": row["agent_id"],
+        "title": row["title"],
+        "created_at": row["created_at"],
+        "ended_at": row["ended_at"],
+        "memory_count": stats["memory_count"] or 0,
+        "categories": stats["categories"].split(",") if stats["categories"] else [],
+        "avg_importance": round(stats["avg_importance"] or 0, 1),
+        "first_memory": stats["first_memory"],
+        "last_memory": stats["last_memory"],
+    }
+
+
+# ── Agents ───────────────────────────────────────────────────────────────────
+
+def list_agents() -> list[dict]:
+    """Return all distinct agent_ids with memory count and last activity."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT agent_id,
+                   COUNT(*) AS memory_count,
+                   MAX(created_at) AS last_active
+            FROM memories
+            WHERE compressed_into IS NULL
+            GROUP BY agent_id
+            ORDER BY last_active DESC
+            """
+        ).fetchall()
+    return [dict(r) for r in rows]
+
+
 # ── Stats / Metrics ──────────────────────────────────────────────────────────
 
 def get_stats(agent_id: str | None = None) -> dict:
@@ -638,7 +785,7 @@ def _count_active_memories(query: str, category: str | None, agent_id: str) -> i
 
 def _reinforce(memory_ids: list[int]) -> None:
     """Increment access_count and update last_accessed for retrieved memories."""
-    now = datetime.now(timezone.utc).isoformat()
+    now = datetime.now(UTC).isoformat()
     with get_connection() as conn:
         conn.executemany(
             """
@@ -654,9 +801,9 @@ def _reinforce(memory_ids: list[int]) -> None:
 
 
 def _fts_search(
-    query: str, 
-    limit: int, 
-    category: str | None, 
+    query: str,
+    limit: int,
+    category: str | None,
     agent_id: str = "default",
     cursor: tuple[float, int] | None = None,
 ) -> list[MemoryRecord]:
@@ -718,7 +865,7 @@ def _fts_search(
             params["category"] = category
 
         rows = conn.execute(
-            sql.format(category_filter=category_filter, cursor_filter=cursor_filter), 
+            sql.format(category_filter=category_filter, cursor_filter=cursor_filter),
             params
         ).fetchall()
 
@@ -726,9 +873,9 @@ def _fts_search(
 
 
 def _semantic_search(
-    query: str, 
-    limit: int, 
-    category: str | None, 
+    query: str,
+    limit: int,
+    category: str | None,
     agent_id: str = "default",
     cursor: tuple[float, int] | None = None,
 ) -> list[MemoryRecord]:
@@ -750,7 +897,7 @@ def _semantic_search(
 
     cursor_filter = ""
     params = [id for id, _ in top_ids]
-    
+
     if cursor:
         decay_score, last_id = cursor
         cursor_filter = "AND ((decay_score, id) < (?, ?))"

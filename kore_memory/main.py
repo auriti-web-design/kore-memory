@@ -4,6 +4,9 @@ Memory layer with decay, auto-scoring, compression, semantic search, and auth.
 """
 
 import secrets
+
+# ── Rate limiter in-memory ───────────────────────────────────────────────────
+import threading as _rl_threading
 import time
 from collections import defaultdict
 from contextlib import asynccontextmanager
@@ -19,6 +22,7 @@ from .auth import get_agent_id, require_auth
 from .dashboard import get_dashboard_html
 from .database import init_db
 from .models import (
+    AutoTuneResponse,
     BatchSaveRequest,
     BatchSaveResponse,
     CleanupExpiredResponse,
@@ -33,6 +37,9 @@ from .models import (
     MemoryUpdateRequest,
     RelationRequest,
     RelationResponse,
+    ScoringStatsResponse,
+    SessionCreateRequest,
+    SessionSummaryResponse,
     TagRequest,
     TagResponse,
 )
@@ -41,13 +48,20 @@ from .repository import (
     add_tags,
     archive_memory,
     cleanup_expired,
+    create_session,
     delete_memory,
+    delete_session,
+    end_session,
     export_memories,
     get_archived,
     get_relations,
+    get_session_memories,
+    get_session_summary,
     get_tags,
     get_timeline,
     import_memories,
+    list_agents,
+    list_sessions,
     remove_tags,
     restore_memory,
     run_decay_pass,
@@ -57,11 +71,6 @@ from .repository import (
     search_memories,
     update_memory,
 )
-
-
-# ── Rate limiter in-memory ───────────────────────────────────────────────────
-
-import threading as _rl_threading
 
 _rate_buckets: dict[str, list[float]] = defaultdict(list)
 _rate_lock = _rl_threading.Lock()
@@ -152,6 +161,10 @@ async def lifespan(app: FastAPI):
     # Initialize API key (auto-generate if missing)
     from .auth import get_or_create_api_key
     get_or_create_api_key()
+    # Enable audit log if configured
+    if config.AUDIT_LOG:
+        from .audit import register_audit_handler
+        register_audit_handler()
     yield
 
 
@@ -199,9 +212,11 @@ def save(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemorySaveResponse:
-    """Save a memory scoped to the requesting agent. Importance is auto-scored if omitted."""
+    """Save a memory scoped to the requesting agent. Importance is auto-scored if omitted.
+    Use X-Session-Id header to associate the memory with a conversation session."""
     _check_rate_limit(_get_client_ip(request), "/save")
-    memory_id, importance = save_memory(req, agent_id=agent_id)
+    session_id = request.headers.get("X-Session-Id")
+    memory_id, importance = save_memory(req, agent_id=agent_id, session_id=session_id)
     return MemorySaveResponse(id=memory_id, importance=importance)
 
 
@@ -234,7 +249,7 @@ def search(
 ) -> MemorySearchResponse:
     """Semantic search scoped to the requesting agent, with cursor-based pagination."""
     _check_rate_limit(_get_client_ip(request), "/search")
-    
+
     # Parse cursor (base64 encoded tuple of decay_score, id)
     cursor_tuple = None
     if cursor:
@@ -245,7 +260,7 @@ def search(
             cursor_tuple = tuple(json.loads(decoded))
         except Exception:
             raise HTTPException(400, "Invalid cursor format")
-    
+
     # Execute search with cursor
     results, next_cursor, total_count = search_memories(
         query=q,
@@ -286,7 +301,7 @@ def timeline(
 ) -> MemorySearchResponse:
     """Chronological memory history for a subject, scoped to agent, with cursor-based pagination."""
     _check_rate_limit(_get_client_ip(request), "/timeline")
-    
+
     # Parse cursor
     cursor_tuple = None
     if cursor:
@@ -297,7 +312,7 @@ def timeline(
             cursor_tuple = tuple(json.loads(decoded))
         except Exception:
             raise HTTPException(400, "Invalid cursor format")
-    
+
     results, next_cursor, total_count = get_timeline(subject=subject, limit=limit, agent_id=agent_id, cursor=cursor_tuple)
 
     # Encode next cursor
@@ -460,6 +475,29 @@ def cleanup(
     return CleanupExpiredResponse(removed=removed)
 
 
+@app.post("/auto-tune", response_model=AutoTuneResponse)
+def auto_tune(
+    request: Request,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> AutoTuneResponse:
+    """Auto-tune memory importance based on access patterns."""
+    _check_rate_limit(_get_client_ip(request), "/decay/run")  # share decay rate limit
+    from .auto_tuner import run_auto_tune
+    result = run_auto_tune(agent_id=agent_id)
+    return AutoTuneResponse(**result)
+
+
+@app.get("/stats/scoring", response_model=ScoringStatsResponse)
+def scoring_stats(
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> ScoringStatsResponse:
+    """Return importance scoring statistics for the agent's memories."""
+    from .auto_tuner import get_scoring_stats
+    return ScoringStatsResponse(**get_scoring_stats(agent_id=agent_id))
+
+
 # ── Backup / Import ──────────────────────────────────────────────────────────
 
 @app.get("/export", response_model=MemoryExportResponse)
@@ -505,6 +543,101 @@ def archive_list(limit: int = Query(50, ge=1, le=100), _: str = _Auth, agent_id:
     return MemorySearchResponse(results=results, total=len(results))
 
 
+# ── Session endpoints ─────────────────────────────────────────────────────────
+
+@app.post("/sessions", status_code=201)
+def session_create(
+    req: SessionCreateRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> dict:
+    """Create a new conversation session."""
+    result = create_session(req.session_id, agent_id=agent_id, title=req.title)
+    if not result:
+        raise HTTPException(400, "Failed to create session")
+    return result
+
+
+@app.get("/sessions")
+def sessions_list(
+    limit: int = Query(50, ge=1, le=200),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> list[dict]:
+    """List all sessions for the requesting agent."""
+    return list_sessions(agent_id=agent_id, limit=limit)
+
+
+@app.get("/sessions/{session_id}/memories", response_model=MemorySearchResponse)
+def session_memories(
+    session_id: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemorySearchResponse:
+    """Get all memories in a session."""
+    results = get_session_memories(session_id, agent_id=agent_id)
+    return MemorySearchResponse(results=results, total=len(results))
+
+
+@app.get("/sessions/{session_id}/summary", response_model=SessionSummaryResponse)
+def session_summary(
+    session_id: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> SessionSummaryResponse:
+    """Get aggregated summary of a session (no LLM)."""
+    summary = get_session_summary(session_id, agent_id=agent_id)
+    if not summary:
+        raise HTTPException(404, "Session not found")
+    return SessionSummaryResponse(**summary)
+
+
+@app.post("/sessions/{session_id}/end")
+def session_end(
+    session_id: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> dict:
+    """Mark a session as ended."""
+    if not end_session(session_id, agent_id=agent_id):
+        raise HTTPException(404, "Session not found or already ended")
+    return {"success": True, "message": "Session ended"}
+
+
+@app.delete("/sessions/{session_id}", status_code=200)
+def session_delete(
+    session_id: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> dict:
+    """Delete a session. Memories are unlinked but not deleted."""
+    unlinked = delete_session(session_id, agent_id=agent_id)
+    return {"success": True, "unlinked_memories": unlinked}
+
+
+# ── Entity extraction ─────────────────────────────────────────────────────────
+
+@app.get("/entities")
+def entities_list(
+    type: str | None = Query(None, description="Filter by entity type (person, org, email, url, date, money, location, product)"),
+    limit: int = Query(50, ge=1, le=200),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> dict:
+    """List extracted entities from memory tags. Requires KORE_ENTITY_EXTRACTION=1."""
+    from .integrations.entities import search_entities
+    results = search_entities(agent_id, entity_type=type, limit=limit)
+    return {"entities": results, "total": len(results)}
+
+
+# ── Agents ────────────────────────────────────────────────────────────────────
+
+@app.get("/agents")
+def agents_list(_: str = _Auth) -> list[dict]:
+    """List all agent IDs with memory count and last activity. No agent scoping — returns all agents."""
+    return list_agents()
+
+
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 @app.get("/metrics", include_in_schema=False)
@@ -527,6 +660,23 @@ def metrics(agent_id: str | None = Query(None)) -> Response:
         f'kore_db_size_bytes {stats["db_size_bytes"]}',
     ]
     return Response(content="\n".join(lines) + "\n", media_type="text/plain; charset=utf-8")
+
+
+# ── Audit log ────────────────────────────────────────────────────────────────
+
+@app.get("/audit")
+def audit_log(
+    request: Request,
+    event: str | None = Query(None),
+    limit: int = Query(100, ge=1, le=1000),
+    since: str | None = Query(None, description="ISO datetime"),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> dict:
+    """Query the audit event log for the requesting agent."""
+    from .audit import query_audit_log
+    entries = query_audit_log(agent_id, event_type=event, limit=limit, since=since)
+    return {"events": entries, "total": len(entries)}
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────

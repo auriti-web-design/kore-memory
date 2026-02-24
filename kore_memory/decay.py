@@ -13,7 +13,7 @@ Where:
 """
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 # Half-life in days per importance level (higher importance = longer half-life)
 HALF_LIFE: dict[int, float] = {
@@ -40,11 +40,11 @@ def compute_decay(
     """
     reference_time = last_accessed or created_at
     try:
-        ref_dt = datetime.fromisoformat(reference_time).replace(tzinfo=timezone.utc)
+        ref_dt = datetime.fromisoformat(reference_time).replace(tzinfo=UTC)
     except ValueError:
-        ref_dt = datetime.now(timezone.utc)
+        ref_dt = datetime.now(UTC)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     days_elapsed = max(0.0, (now - ref_dt).total_seconds() / 86400)
 
     base_half_life = HALF_LIFE.get(importance, 14.0)
