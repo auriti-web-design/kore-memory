@@ -25,7 +25,7 @@ def main() -> None:
         sys.exit(1)
 
     uvicorn.run(
-        "src.main:app",
+        "kore_memory.main:app",
         host=args.host,
         port=args.port,
         reload=args.reload,

@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.8.0] - 2026-02-24
+
+**"Developer Experience" — Framework integrations, dashboard overhaul, CI/CD maturity.**
+
+### ✨ Added
+
+- **LangChain Integration** — `KoreLangChainMemory` extending `BaseMemory` for drop-in use with LangChain chains
+  - `load_memory_variables()` retrieves relevant context via semantic search
+  - `save_context()` auto-saves conversation turns with importance scoring
+  - `clear()` is a no-op — Kore handles decay naturally
+  - Configurable: `memory_key`, `input_key`, `output_key`, `k`, `semantic`, `category`
+  - Install: `pip install 'kore-memory[langchain]'`
+
+- **CrewAI Integration** — `KoreCrewAIMemory` as a memory provider for CrewAI agents
+  - `save()` / `search()` for general memory operations
+  - `save_short_term()` — importance=1, TTL=24h for ephemeral context
+  - `save_long_term()` — importance=4+, no TTL for persistent knowledge
+  - Install: `pip install 'kore-memory[crewai]'`
+
+- **Dashboard UX Overhaul** — Major UI improvements:
+  - Light/dark theme toggle (persisted in localStorage)
+  - Keyboard shortcuts: `/` search, `N` new memory, `Esc` dismiss, `1-9` navigation, `T` theme, `?` help
+  - Search filters panel: category, importance range, date range
+  - Expandable memory cards with full detail view (tags, relations, decay, access count)
+  - Inline memory editing (click Edit to modify content, category, importance)
+  - CSV + JSON export from search results
+  - New **Archive tab** — view and restore archived memories
+  - New **Metrics tab** — category distribution, importance histogram, decay distribution, system stats
+  - Loading spinners on all API calls (search, save, maintenance, export, import)
+  - Toast notifications with success/error icons
+  - Empty state illustrations with helpful guidance
+  - ARIA labels, `role` attributes, skip-to-content link, `aria-live` regions
+  - Keyboard-navigable sidebar with `tabindex` and `aria-current`
+
+- **CI/CD Improvements**:
+  - Coverage job with `pytest-cov` (warns if <80%)
+  - JS SDK test job (Node 20, vitest)
+  - JS SDK build auto-triggered on `v*` tags
+  - Coverage report uploaded as GitHub Actions artifact
+
+- **Quick Wins**:
+  - `__version__` exported from `kore_memory` package
+  - `CONTRIBUTING.md` guide for OSS contributors
+  - GitHub issue templates (bug report + feature request, YAML forms)
+  - Pull request template with checklist
+  - Example scripts: `basic_usage.py`, `langchain_example.py`, `async_usage.py`
+
+### 📦 SDK
+
+- JavaScript SDK updated to v0.8.0
+- New optional dependency groups: `langchain`, `crewai`
+- `pytest-cov` added to dev dependencies
+
+### 🧪 Testing
+
+- 28 new LangChain integration tests (mocked client, graceful import fallback)
+- 19 new CrewAI integration tests (short/long-term patterns, lifecycle)
+- Total test suite: **165 tests** (was 118)
+
+---
+
 ## [0.7.0] - 2026-02-24
 
 **Resolves ALL 30 open GitHub issues.**
@@ -257,6 +318,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Version Naming
 
+- **0.8.x** — Developer experience, LangChain/CrewAI, dashboard UX
 - **0.7.x** — Performance, security, 30 issues resolved
 - **0.6.x** — Package rename, cursor-based pagination
 - **0.5.x** — MCP, tags, relations, TTL, batch API, Python SDK
@@ -267,6 +329,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[0.8.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.4...v0.6.0
 [0.5.4]: https://github.com/auriti-web-design/kore-memory/compare/v0.5.3...v0.5.4

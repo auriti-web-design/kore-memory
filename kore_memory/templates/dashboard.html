@@ -38,6 +38,28 @@
   --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ── Light theme ──────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-deep: #f5f5f7;
+  --bg-base: #ffffff;
+  --bg-card: #f9f9fb;
+  --bg-card-hover: #f0f0f5;
+  --bg-input: #f0f0f5;
+  --border: #d4d4e0;
+  --border-hover: #b0b0c8;
+  --text: #3a3a4a;
+  --text-dim: #8a8a9a;
+  --text-bright: #1a1a2e;
+  --accent: #7c3aed;
+  --accent-glow: rgba(124, 58, 237, 0.2);
+  --accent-soft: #6d28d9;
+  --green: #059669;
+  --green-glow: rgba(5, 150, 105, 0.15);
+  --amber: #d97706;
+  --red: #dc2626;
+  --red-glow: rgba(220, 38, 38, 0.15);
+}
+
 html { font-size: 14px; }
 body {
   font-family: var(--font-body);
@@ -101,7 +123,7 @@ body {
 .header-controls {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 .agent-input-wrap {
   display: flex;
@@ -127,6 +149,28 @@ body {
   font-weight: 500;
   width: 120px;
   outline: none;
+}
+.theme-toggle {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 16px;
+  line-height: 1;
+  transition: all var(--transition);
+}
+.theme-toggle:hover { border-color: var(--accent); }
+.theme-toggle[aria-label]::after { content: none; }
+.kbd-hint {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 5px;
+  font-family: var(--font-body);
 }
 .status-dot {
   width: 8px;
@@ -170,6 +214,10 @@ body {
   color: var(--accent);
   background: rgba(124, 58, 237, 0.08);
   border-left-color: var(--accent);
+}
+.nav-item:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 .nav-icon {
   font-size: 16px;
@@ -267,6 +315,7 @@ body {
   gap: 6px;
 }
 .btn:hover { border-color: var(--accent); color: var(--text-bright); }
+.btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .btn-primary {
   background: var(--accent);
   border-color: var(--accent);
@@ -280,9 +329,10 @@ body {
 .btn-danger:hover { background: var(--red); color: #fff; }
 .btn-sm { padding: 5px 10px; font-size: 11px; }
 .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn .spinner { width: 14px; height: 14px; border-width: 2px; }
 
 /* Input / Form */
-input[type="text"], input[type="number"], select, textarea {
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
   font-family: var(--font-body);
   font-size: 13px;
   padding: 8px 12px;
@@ -409,6 +459,9 @@ tr:hover { background: var(--bg-card-hover); }
   animation: slideIn 0.3s ease, fadeOut 0.3s ease 2.7s;
   max-width: 360px;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .toast.success { border-color: var(--green); color: var(--green); }
 .toast.error { border-color: var(--red); color: var(--red); }
@@ -460,7 +513,8 @@ tr:hover { background: var(--bg-card-hover); }
   color: var(--text-dim);
   font-size: 13px;
 }
-.empty-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+.empty-icon { font-size: 32px; margin-bottom: 10px; display: block; opacity: 0.5; }
+.empty-title { font-family: var(--font-heading); font-size: 16px; color: var(--text); margin-bottom: 6px; }
 
 /* Loading */
 .spinner {
@@ -472,7 +526,18 @@ tr:hover { background: var(--bg-card-hover); }
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
+.spinner-lg { width: 28px; height: 28px; border-width: 3px; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-overlay {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  color: var(--text-dim);
+  font-size: 12px;
+}
 
 /* Toggle switch */
 .toggle {
@@ -530,6 +595,146 @@ tr:hover { background: var(--bg-card-hover); }
   display: none;
 }
 
+/* Expandable memory detail */
+.memory-detail {
+  display: none;
+  padding: 12px 16px;
+  background: var(--bg-input);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  animation: fadeIn 0.2s ease;
+}
+.memory-detail.open { display: block; }
+.memory-detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.memory-detail-grid dt { color: var(--text-dim); font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
+.memory-detail-grid dd { color: var(--text); margin-top: 2px; }
+.memory-full-content {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+  color: var(--text);
+  margin-top: 8px;
+  padding: 10px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+/* Inline edit */
+.inline-edit {
+  background: var(--bg-input);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 12px;
+  padding: 4px 8px;
+  width: 100%;
+}
+
+/* Filters panel */
+.filters-panel {
+  display: none;
+  padding: 16px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-top: 12px;
+  animation: fadeIn 0.2s ease;
+}
+.filters-panel.open { display: block; }
+.filters-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.filters-row .form-group { margin-bottom: 0; flex: 1; min-width: 140px; }
+
+/* Metrics chart area */
+.chart-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 120px;
+  padding: 0 4px;
+}
+.chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.chart-col .bar {
+  width: 100%;
+  max-width: 40px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+  transition: height 0.3s;
+  min-height: 2px;
+}
+.chart-col .label {
+  font-size: 9px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  writing-mode: vertical-lr;
+  transform: rotate(180deg);
+  max-height: 60px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chart-col .value {
+  font-size: 10px;
+  color: var(--text-bright);
+  font-weight: 600;
+}
+
+/* Keyboard shortcut overlay */
+.kbd-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  place-items: center;
+}
+.kbd-overlay.open { display: grid; }
+.kbd-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 32px;
+  max-width: 400px;
+  width: 90%;
+}
+.kbd-panel h3 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  color: var(--text-bright);
+  margin-bottom: 16px;
+}
+.kbd-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 13px;
+}
+.kbd-row kbd {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--accent);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .app {
@@ -556,53 +761,93 @@ tr:hover { background: var(--bg-card-hover); }
   .nav-item.active { border-left-color: transparent; border-top-color: var(--accent); }
   .main { padding: 16px; }
   .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  .kbd-hint { display: none; }
+  .filters-row { flex-direction: column; }
+  .memory-detail-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Skip to content (a11y) ──────────────────────────────────────── */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: var(--accent);
+  color: #fff;
+  padding: 8px 16px;
+  z-index: 3000;
+  font-size: 13px;
+  transition: top 0.2s;
+}
+.skip-link:focus { top: 0; }
+
+/* ── visually-hidden (a11y) ──────────────────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+  border: 0;
 }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <div class="app">
   <!-- Header -->
-  <header class="header">
+  <header class="header" role="banner">
     <div class="header-brand">
-      <div class="header-logo">K</div>
+      <div class="header-logo" aria-hidden="true">K</div>
       <div class="header-title">Kore <span>Memory Dashboard</span></div>
     </div>
     <div class="header-controls">
       <div class="agent-input-wrap">
         <label for="agent-id">Agent</label>
-        <input type="text" id="agent-id" value="default" spellcheck="false">
+        <input type="text" id="agent-id" value="default" spellcheck="false" aria-label="Agent ID">
       </div>
-      <div class="status-dot" id="status-dot" title="Server status"></div>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle light/dark theme" title="Toggle theme">&#9790;</button>
+      <span class="kbd-hint" title="Press ? for keyboard shortcuts">?</span>
+      <div class="status-dot" id="status-dot" title="Server status" role="status" aria-label="Server online"></div>
     </div>
   </header>
 
   <!-- Sidebar -->
-  <nav class="sidebar">
-    <div class="nav-item active" data-page="overview">
-      <span class="nav-icon">&#9673;</span> Overview
+  <nav class="sidebar" role="navigation" aria-label="Main navigation">
+    <div class="nav-item active" data-page="overview" role="button" tabindex="0" aria-current="page">
+      <span class="nav-icon" aria-hidden="true">&#9673;</span> Overview
     </div>
-    <div class="nav-item" data-page="memories">
-      <span class="nav-icon">&#9731;</span> Memories
+    <div class="nav-item" data-page="memories" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#9731;</span> Memories
     </div>
-    <div class="nav-item" data-page="tags">
-      <span class="nav-icon">&#9856;</span> Tags
+    <div class="nav-item" data-page="tags" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#9856;</span> Tags
     </div>
-    <div class="nav-item" data-page="relations">
-      <span class="nav-icon">&#8644;</span> Relations
+    <div class="nav-item" data-page="relations" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#8644;</span> Relations
     </div>
-    <div class="nav-item" data-page="timeline">
-      <span class="nav-icon">&#8982;</span> Timeline
+    <div class="nav-item" data-page="timeline" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#8982;</span> Timeline
     </div>
-    <div class="nav-item" data-page="maintenance">
-      <span class="nav-icon">&#9881;</span> Maintenance
+    <div class="nav-item" data-page="archive" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#9998;</span> Archive
     </div>
-    <div class="nav-item" data-page="backup">
-      <span class="nav-icon">&#8693;</span> Backup
+    <div class="nav-item" data-page="maintenance" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#9881;</span> Maintenance
+    </div>
+    <div class="nav-item" data-page="metrics" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#9636;</span> Metrics
+    </div>
+    <div class="nav-item" data-page="backup" role="button" tabindex="0">
+      <span class="nav-icon" aria-hidden="true">&#8693;</span> Backup
     </div>
   </nav>
 
   <!-- Main content -->
-  <main class="main">
+  <main class="main" id="main-content" role="main">
     <!-- ═══ Overview ═══ -->
     <div class="page active" id="page-overview">
       <h1 class="page-title">Overview</h1>
@@ -625,8 +870,8 @@ tr:hover { background: var(--bg-card-hover); }
         </div>
       </div>
       <div class="card">
-        <div class="card-header"><span class="icon">&#9632;</span> Memories by Category</div>
-        <div id="category-breakdown" class="empty"><span class="empty-icon">&#8987;</span>Loading...</div>
+        <div class="card-header"><span class="icon" aria-hidden="true">&#9632;</span> Memories by Category</div>
+        <div id="category-breakdown"><div class="loading-overlay"><span class="spinner"></span> Loading...</div></div>
       </div>
     </div>
 
@@ -635,13 +880,13 @@ tr:hover { background: var(--bg-card-hover); }
       <h1 class="page-title">Memories <small>Search, save, manage</small></h1>
       <!-- Ricerca -->
       <div class="card">
-        <div class="card-header"><span class="icon">&#9906;</span> Search</div>
+        <div class="card-header"><span class="icon" aria-hidden="true">&#9906;</span> Search</div>
         <div class="form-row">
           <div class="form-group" style="flex:3">
-            <input type="text" id="search-q" placeholder="Search memories...">
+            <input type="text" id="search-q" placeholder="Search memories... (press / to focus)" aria-label="Search query">
           </div>
           <div class="form-group" style="flex:0 0 80px">
-            <input type="number" id="search-limit" value="10" min="1" max="20">
+            <input type="number" id="search-limit" value="10" min="1" max="20" aria-label="Results limit">
           </div>
           <div class="form-group" style="flex:0 0 auto">
             <label class="toggle">
@@ -651,33 +896,81 @@ tr:hover { background: var(--bg-card-hover); }
             </label>
           </div>
           <div class="form-group" style="flex:0 0 auto">
-            <button class="btn btn-primary" onclick="doSearch()">Search</button>
+            <button class="btn" id="btn-filters" aria-expanded="false" aria-controls="search-filters">Filters</button>
+          </div>
+          <div class="form-group" style="flex:0 0 auto">
+            <button class="btn btn-primary" id="btn-search" onclick="doSearch()">Search</button>
+          </div>
+        </div>
+        <!-- Filters panel -->
+        <div class="filters-panel" id="search-filters" role="region" aria-label="Search filters">
+          <div class="filters-row">
+            <div class="form-group">
+              <label for="filter-category">Category</label>
+              <select id="filter-category" aria-label="Filter by category">
+                <option value="">All categories</option>
+                <option value="general">general</option>
+                <option value="project">project</option>
+                <option value="trading">trading</option>
+                <option value="finance">finance</option>
+                <option value="person">person</option>
+                <option value="preference">preference</option>
+                <option value="task">task</option>
+                <option value="decision">decision</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="filter-imp-min">Importance min</label>
+              <input type="number" id="filter-imp-min" min="1" max="5" placeholder="1" aria-label="Minimum importance">
+            </div>
+            <div class="form-group">
+              <label for="filter-imp-max">Importance max</label>
+              <input type="number" id="filter-imp-max" min="1" max="5" placeholder="5" aria-label="Maximum importance">
+            </div>
+            <div class="form-group">
+              <label for="filter-date-from">From date</label>
+              <input type="date" id="filter-date-from" aria-label="Filter from date">
+            </div>
+            <div class="form-group">
+              <label for="filter-date-to">To date</label>
+              <input type="date" id="filter-date-to" aria-label="Filter to date">
+            </div>
+            <div class="form-group" style="flex:0 0 auto">
+              <button class="btn btn-sm" onclick="clearFilters()">Clear</button>
+            </div>
           </div>
         </div>
       </div>
       <div class="card" id="search-results-card" style="display:none">
-        <div class="card-header"><span class="icon">&#9776;</span> Results <small id="search-total" style="color:var(--text-dim);font-size:12px;margin-left:8px"></small></div>
+        <div class="card-header">
+          <span class="icon" aria-hidden="true">&#9776;</span> Results
+          <small id="search-total" style="color:var(--text-dim);font-size:12px;margin-left:8px"></small>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button class="btn btn-sm" onclick="exportSearchCSV()" title="Export results as CSV">CSV</button>
+            <button class="btn btn-sm" onclick="exportSearchJSON()" title="Export results as JSON">JSON</button>
+          </div>
+        </div>
         <div class="table-wrap">
-          <table>
+          <table aria-label="Search results">
             <thead><tr><th>ID</th><th>Content</th><th>Category</th><th>Imp.</th><th>Decay</th><th>Created</th><th></th></tr></thead>
             <tbody id="search-results-body"></tbody>
           </table>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px">
-          <button class="btn btn-sm" id="search-prev" onclick="searchPage(-1)" disabled>&larr; Prev</button>
-          <button class="btn btn-sm" id="search-next" onclick="searchPage(1)" disabled>Next &rarr;</button>
+          <button class="btn btn-sm" id="search-prev" onclick="searchPage(-1)" disabled aria-label="Previous page">&larr; Prev</button>
+          <button class="btn btn-sm" id="search-next" onclick="searchPage(1)" disabled aria-label="Next page">Next &rarr;</button>
         </div>
       </div>
       <!-- Salva -->
-      <div class="card">
-        <div class="card-header"><span class="icon">&#10010;</span> Save Memory</div>
+      <div class="card" id="save-card">
+        <div class="card-header"><span class="icon" aria-hidden="true">&#10010;</span> Save Memory <small style="color:var(--text-dim);font-size:11px;margin-left:8px">(press N to focus)</small></div>
         <div class="form-group">
-          <label>Content</label>
-          <textarea id="save-content" placeholder="Memory content (3–4000 chars)..."></textarea>
+          <label for="save-content">Content</label>
+          <textarea id="save-content" placeholder="Memory content (3-4000 chars)..." aria-label="Memory content"></textarea>
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label>Category</label>
+            <label for="save-category">Category</label>
             <select id="save-category">
               <option value="general">general</option>
               <option value="project">project</option>
@@ -690,15 +983,15 @@ tr:hover { background: var(--bg-card-hover); }
             </select>
           </div>
           <div class="form-group">
-            <label>Importance (1 = auto)</label>
+            <label for="save-importance">Importance (1 = auto)</label>
             <input type="number" id="save-importance" value="1" min="1" max="5">
           </div>
           <div class="form-group">
-            <label>TTL (hours, empty = never)</label>
+            <label for="save-ttl">TTL (hours, empty = never)</label>
             <input type="number" id="save-ttl" placeholder="e.g. 48" min="1" max="8760">
           </div>
           <div class="form-group">
-            <button class="btn btn-primary" onclick="doSave()">Save</button>
+            <button class="btn btn-primary" id="btn-save" onclick="doSave()">Save</button>
           </div>
         </div>
       </div>
@@ -709,21 +1002,25 @@ tr:hover { background: var(--bg-card-hover); }
       <h1 class="page-title">Tags <small>Organize &amp; search</small></h1>
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><span class="icon">&#9906;</span> Search by Tag</div>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#9906;</span> Search by Tag</div>
           <div class="form-row">
-            <div class="form-group"><input type="text" id="tag-search-q" placeholder="Tag name..."></div>
+            <div class="form-group"><input type="text" id="tag-search-q" placeholder="Tag name..." aria-label="Tag search"></div>
             <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" onclick="doTagSearch()">Search</button></div>
           </div>
-          <div id="tag-search-results" class="empty" style="margin-top:12px"><span class="empty-icon">&#9856;</span>Enter a tag to search</div>
+          <div id="tag-search-results" class="empty" style="margin-top:12px">
+            <span class="empty-icon" aria-hidden="true">&#9856;</span>
+            <div class="empty-title">No tag selected</div>
+            Enter a tag name to search for memories
+          </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="icon">&#10010;</span> Manage Tags</div>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#10010;</span> Manage Tags</div>
           <div class="form-group">
-            <label>Memory ID</label>
+            <label for="tag-memory-id">Memory ID</label>
             <input type="number" id="tag-memory-id" placeholder="Memory ID">
           </div>
           <div class="form-group">
-            <label>Tags (comma-separated)</label>
+            <label for="tag-input">Tags (comma-separated)</label>
             <input type="text" id="tag-input" placeholder="tag1, tag2, tag3">
           </div>
           <div style="display:flex;gap:8px">
@@ -731,7 +1028,7 @@ tr:hover { background: var(--bg-card-hover); }
             <button class="btn btn-danger" onclick="doRemoveTags()">Remove Tags</button>
             <button class="btn" onclick="doGetTags()">Get Tags</button>
           </div>
-          <div id="tag-manage-result" style="margin-top:12px"></div>
+          <div id="tag-manage-result" style="margin-top:12px" aria-live="polite"></div>
         </div>
       </div>
     </div>
@@ -741,25 +1038,25 @@ tr:hover { background: var(--bg-card-hover); }
       <h1 class="page-title">Relations <small>Knowledge graph</small></h1>
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><span class="icon">&#8644;</span> View Relations</div>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#8644;</span> View Relations</div>
           <div class="form-row">
-            <div class="form-group"><input type="number" id="rel-view-id" placeholder="Memory ID"></div>
+            <div class="form-group"><input type="number" id="rel-view-id" placeholder="Memory ID" aria-label="Memory ID for relations"></div>
             <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" onclick="doGetRelations()">View</button></div>
           </div>
-          <div id="rel-results" style="margin-top:12px"></div>
+          <div id="rel-results" style="margin-top:12px" aria-live="polite"></div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="icon">&#10010;</span> Create Relation</div>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#10010;</span> Create Relation</div>
           <div class="form-group">
-            <label>Source Memory ID</label>
+            <label for="rel-source">Source Memory ID</label>
             <input type="number" id="rel-source" placeholder="Source ID">
           </div>
           <div class="form-group">
-            <label>Target Memory ID</label>
+            <label for="rel-target">Target Memory ID</label>
             <input type="number" id="rel-target" placeholder="Target ID">
           </div>
           <div class="form-group">
-            <label>Relation Type</label>
+            <label for="rel-type">Relation Type</label>
             <input type="text" id="rel-type" value="related" placeholder="e.g. depends_on, related">
           </div>
           <button class="btn btn-primary" onclick="doAddRelation()">Create</button>
@@ -772,12 +1069,32 @@ tr:hover { background: var(--bg-card-hover); }
       <h1 class="page-title">Timeline <small>Chronological trace</small></h1>
       <div class="card">
         <div class="form-row">
-          <div class="form-group" style="flex:3"><input type="text" id="timeline-subject" placeholder="Subject to trace..."></div>
-          <div class="form-group" style="flex:0 0 80px"><input type="number" id="timeline-limit" value="20" min="1" max="50"></div>
-          <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" onclick="doTimeline()">Trace</button></div>
+          <div class="form-group" style="flex:3"><input type="text" id="timeline-subject" placeholder="Subject to trace..." aria-label="Timeline subject"></div>
+          <div class="form-group" style="flex:0 0 80px"><input type="number" id="timeline-limit" value="20" min="1" max="50" aria-label="Timeline limit"></div>
+          <div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary" id="btn-timeline" onclick="doTimeline()">Trace</button></div>
         </div>
       </div>
-      <div id="timeline-results" class="empty"><span class="empty-icon">&#8982;</span>Enter a subject to trace</div>
+      <div id="timeline-results" aria-live="polite">
+        <div class="empty">
+          <span class="empty-icon" aria-hidden="true">&#8982;</span>
+          <div class="empty-title">No subject selected</div>
+          Enter a subject to trace its memory timeline
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Archive ═══ -->
+    <div class="page" id="page-archive">
+      <h1 class="page-title">Archive <small>Archived memories</small></h1>
+      <div class="card">
+        <div class="card-header">
+          <span class="icon" aria-hidden="true">&#9998;</span> Archived Memories
+          <button class="btn btn-sm" style="margin-left:auto" onclick="loadArchive()">Refresh</button>
+        </div>
+        <div id="archive-list" aria-live="polite">
+          <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
+        </div>
+      </div>
     </div>
 
     <!-- ═══ Maintenance ═══ -->
@@ -788,7 +1105,7 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="maint-info">
             <h4>&#9201; Decay Run</h4>
             <p>Recalculate decay scores using Ebbinghaus forgetting curve</p>
-            <div class="maint-result" id="decay-result"></div>
+            <div class="maint-result" id="decay-result" aria-live="polite"></div>
           </div>
           <button class="btn btn-primary" id="btn-decay" onclick="doDecay()">Run Decay</button>
         </div>
@@ -796,7 +1113,7 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="maint-info">
             <h4>&#9878; Compress</h4>
             <p>Merge similar memories (cosine similarity &gt; 0.88)</p>
-            <div class="maint-result" id="compress-result"></div>
+            <div class="maint-result" id="compress-result" aria-live="polite"></div>
           </div>
           <button class="btn btn-primary" id="btn-compress" onclick="doCompress()">Run Compress</button>
         </div>
@@ -804,9 +1121,42 @@ tr:hover { background: var(--bg-card-hover); }
           <div class="maint-info">
             <h4>&#9851; Cleanup</h4>
             <p>Remove expired memories (TTL)</p>
-            <div class="maint-result" id="cleanup-result"></div>
+            <div class="maint-result" id="cleanup-result" aria-live="polite"></div>
           </div>
           <button class="btn btn-primary" id="btn-cleanup" onclick="doCleanup()">Run Cleanup</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ Metrics ═══ -->
+    <div class="page" id="page-metrics">
+      <h1 class="page-title">Metrics <small>Memory analytics</small></h1>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="icon" aria-hidden="true">&#9636;</span> Category Distribution</div>
+          <div id="metrics-categories">
+            <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="icon" aria-hidden="true">&#9733;</span> Importance Distribution</div>
+          <div id="metrics-importance">
+            <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="icon" aria-hidden="true">&#9201;</span> Decay Distribution</div>
+          <div id="metrics-decay">
+            <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="icon" aria-hidden="true">&#9881;</span> System Stats</div>
+          <div id="metrics-system">
+            <div class="loading-overlay"><span class="spinner"></span> Loading...</div>
+          </div>
         </div>
       </div>
     </div>
@@ -816,17 +1166,20 @@ tr:hover { background: var(--bg-card-hover); }
       <h1 class="page-title">Backup <small>Export &amp; import</small></h1>
       <div class="grid-2">
         <div class="card">
-          <div class="card-header"><span class="icon">&#8681;</span> Export</div>
-          <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Download all active memories as JSON</p>
-          <button class="btn btn-primary" onclick="doExport()">Export JSON</button>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#8681;</span> Export</div>
+          <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Download all active memories</p>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-primary" id="btn-export-json" onclick="doExport('json')">Export JSON</button>
+            <button class="btn" id="btn-export-csv" onclick="doExport('csv')">Export CSV</button>
+          </div>
         </div>
         <div class="card">
-          <div class="card-header"><span class="icon">&#8679;</span> Import</div>
+          <div class="card-header"><span class="icon" aria-hidden="true">&#8679;</span> Import</div>
           <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px">Upload a previously exported JSON file</p>
-          <input type="file" id="import-file" accept=".json" style="margin-bottom:12px">
+          <input type="file" id="import-file" accept=".json" style="margin-bottom:12px" aria-label="Select JSON file to import">
           <br>
-          <button class="btn btn-primary" onclick="doImport()">Import</button>
-          <div id="import-result" style="margin-top:12px;font-size:12px"></div>
+          <button class="btn btn-primary" id="btn-import" onclick="doImport()">Import</button>
+          <div id="import-result" style="margin-top:12px;font-size:12px" aria-live="polite"></div>
         </div>
       </div>
     </div>
@@ -835,13 +1188,32 @@ tr:hover { background: var(--bg-card-hover); }
 </div>
 
 <!-- Toast container -->
-<div class="toast-container" id="toast-container"></div>
+<div class="toast-container" id="toast-container" role="alert" aria-live="assertive"></div>
+
+<!-- Keyboard shortcuts overlay -->
+<div class="kbd-overlay" id="kbd-overlay" role="dialog" aria-label="Keyboard shortcuts" aria-modal="true">
+  <div class="kbd-panel">
+    <h3>Keyboard Shortcuts</h3>
+    <div class="kbd-row"><span>Focus search</span><kbd>/</kbd></div>
+    <div class="kbd-row"><span>New memory</span><kbd>N</kbd></div>
+    <div class="kbd-row"><span>Close / Dismiss</span><kbd>Esc</kbd></div>
+    <div class="kbd-row"><span>Go to Overview</span><kbd>1</kbd></div>
+    <div class="kbd-row"><span>Go to Memories</span><kbd>2</kbd></div>
+    <div class="kbd-row"><span>Go to Tags</span><kbd>3</kbd></div>
+    <div class="kbd-row"><span>Go to Timeline</span><kbd>5</kbd></div>
+    <div class="kbd-row"><span>Go to Archive</span><kbd>6</kbd></div>
+    <div class="kbd-row"><span>Toggle theme</span><kbd>T</kbd></div>
+    <div class="kbd-row"><span>Show shortcuts</span><kbd>?</kbd></div>
+    <div style="margin-top:16px;text-align:center"><button class="btn btn-sm" onclick="toggleKbd()">Close</button></div>
+  </div>
+</div>
 
 <script>
 /* ── Stato globale ─────────────────────────────────────────────────── */
 let currentOffset = 0;
 let lastQuery = '';
 let lastHasMore = false;
+let lastSearchResults = [];
 
 /* ── Helpers ───────────────────────────────────────────────────────── */
 function agentId() { return document.getElementById('agent-id').value || 'default'; }
@@ -861,7 +1233,8 @@ async function api(path, opts = {}) {
 function toast(msg, type = 'success') {
   const el = document.createElement('div');
   el.className = 'toast ' + type;
-  el.textContent = msg;
+  el.textContent = (type === 'success' ? '\u2713 ' : '\u2717 ') + msg;
+  el.setAttribute('role', 'status');
   document.getElementById('toast-container').appendChild(el);
   setTimeout(() => el.remove(), 3000);
 }
@@ -872,32 +1245,116 @@ function esc(s) {
   return d.innerHTML;
 }
 
-function truncate(s, n = 80) { return s.length > n ? s.slice(0, n) + '...' : s; }
+function truncate(s, n = 80) { return s.length > n ? s.slice(0, n) + '\u2026' : s; }
 
-function stars(n) { return '<span class="importance">' + '★'.repeat(n) + '<span style="color:var(--border)">' + '★'.repeat(5 - n) + '</span></span>'; }
+function stars(n) { return '<span class="importance" aria-label="Importance ' + n + ' of 5">' + '\u2605'.repeat(n) + '<span style="color:var(--border)">' + '\u2605'.repeat(5 - n) + '</span></span>'; }
 
 function decayBar(score) {
   const pct = Math.round(score * 100);
   const color = score > 0.6 ? 'var(--green)' : score > 0.3 ? 'var(--amber)' : 'var(--red)';
-  return '<span class="decay-bar"><span class="decay-bar-fill" style="width:' + pct + '%;background:' + color + '"></span></span>' + pct + '%';
+  return '<span class="decay-bar" role="progressbar" aria-valuenow="' + pct + '" aria-valuemin="0" aria-valuemax="100"><span class="decay-bar-fill" style="width:' + pct + '%;background:' + color + '"></span></span>' + pct + '%';
 }
 
 function fmtDate(iso) {
-  if (!iso) return '—';
+  if (!iso) return '\u2014';
   const d = new Date(iso);
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) + ' ' +
          d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
 }
 
+function setLoading(btnId, loading) {
+  const btn = document.getElementById(btnId);
+  if (!btn) return;
+  if (loading) {
+    btn._origText = btn.textContent;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>';
+  } else {
+    btn.disabled = false;
+    btn.textContent = btn._origText || btn.textContent;
+  }
+}
+
+/* ── Theme toggle ──────────────────────────────────────────────────── */
+function getTheme() { return localStorage.getItem('kore-theme') || 'dark'; }
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  document.getElementById('theme-toggle').textContent = t === 'dark' ? '\u263E' : '\u2600';
+  localStorage.setItem('kore-theme', t);
+}
+function toggleTheme() { applyTheme(getTheme() === 'dark' ? 'light' : 'dark'); }
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+applyTheme(getTheme());
+
 /* ── Navigazione ───────────────────────────────────────────────────── */
+function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(i => { i.classList.remove('active'); i.removeAttribute('aria-current'); });
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const navItem = document.querySelector('.nav-item[data-page="' + page + '"]');
+  if (navItem) { navItem.classList.add('active'); navItem.setAttribute('aria-current', 'page'); }
+  const pageEl = document.getElementById('page-' + page);
+  if (pageEl) pageEl.classList.add('active');
+  if (page === 'archive') loadArchive();
+  if (page === 'metrics') loadMetrics();
+}
+
 document.querySelectorAll('.nav-item').forEach(item => {
-  item.addEventListener('click', () => {
-    document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    item.classList.add('active');
-    document.getElementById('page-' + item.dataset.page).classList.add('active');
-  });
+  item.addEventListener('click', () => navigateTo(item.dataset.page));
+  item.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigateTo(item.dataset.page); } });
 });
+
+/* ── Keyboard shortcuts ────────────────────────────────────────────── */
+function toggleKbd() { document.getElementById('kbd-overlay').classList.toggle('open'); }
+
+document.addEventListener('keydown', e => {
+  const tag = e.target.tagName;
+  const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
+
+  // Esc always works
+  if (e.key === 'Escape') {
+    document.getElementById('kbd-overlay').classList.remove('open');
+    if (document.activeElement) document.activeElement.blur();
+    return;
+  }
+
+  if (inInput) {
+    if (e.key === 'Enter') {
+      const id = e.target.id;
+      if (id === 'search-q') doSearch();
+      else if (id === 'tag-search-q') doTagSearch();
+      else if (id === 'timeline-subject') doTimeline();
+    }
+    return;
+  }
+
+  if (e.key === '/') { e.preventDefault(); navigateTo('memories'); setTimeout(() => document.getElementById('search-q').focus(), 100); }
+  else if (e.key === 'n' || e.key === 'N') { e.preventDefault(); navigateTo('memories'); setTimeout(() => document.getElementById('save-content').focus(), 100); }
+  else if (e.key === '?' || (e.shiftKey && e.key === '/')) { toggleKbd(); }
+  else if (e.key === 't' || e.key === 'T') { toggleTheme(); }
+  else if (e.key === '1') { navigateTo('overview'); }
+  else if (e.key === '2') { navigateTo('memories'); }
+  else if (e.key === '3') { navigateTo('tags'); }
+  else if (e.key === '4') { navigateTo('relations'); }
+  else if (e.key === '5') { navigateTo('timeline'); }
+  else if (e.key === '6') { navigateTo('archive'); }
+  else if (e.key === '7') { navigateTo('maintenance'); }
+  else if (e.key === '8') { navigateTo('metrics'); }
+  else if (e.key === '9') { navigateTo('backup'); }
+});
+
+/* ── Filters ───────────────────────────────────────────────────────── */
+document.getElementById('btn-filters').addEventListener('click', function() {
+  const panel = document.getElementById('search-filters');
+  const open = panel.classList.toggle('open');
+  this.setAttribute('aria-expanded', open);
+});
+function clearFilters() {
+  document.getElementById('filter-category').value = '';
+  document.getElementById('filter-imp-min').value = '';
+  document.getElementById('filter-imp-max').value = '';
+  document.getElementById('filter-date-from').value = '';
+  document.getElementById('filter-date-to').value = '';
+}
 
 /* ── Overview ──────────────────────────────────────────────────────── */
 async function loadOverview() {
@@ -907,8 +1364,10 @@ async function loadOverview() {
     document.getElementById('stat-semantic').textContent = health.semantic_search ? 'ON' : 'OFF';
     document.getElementById('stat-semantic').style.color = health.semantic_search ? 'var(--green)' : 'var(--text-dim)';
     document.getElementById('status-dot').classList.remove('offline');
+    document.getElementById('status-dot').setAttribute('aria-label', 'Server online');
   } catch {
     document.getElementById('status-dot').classList.add('offline');
+    document.getElementById('status-dot').setAttribute('aria-label', 'Server offline');
   }
 
   try {
@@ -916,14 +1375,13 @@ async function loadOverview() {
     const mems = exp.memories || [];
     document.getElementById('stat-total').textContent = exp.total || 0;
 
-    // Conteggio per categoria
     const cats = {};
     mems.forEach(m => { cats[m.category] = (cats[m.category] || 0) + 1; });
     document.getElementById('stat-categories').textContent = Object.keys(cats).length;
 
     const catDiv = document.getElementById('category-breakdown');
     if (Object.keys(cats).length === 0) {
-      catDiv.innerHTML = '<div class="empty"><span class="empty-icon">&#9673;</span>No memories yet</div>';
+      catDiv.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#128218;</span><div class="empty-title">No memories yet</div>Save your first memory to get started</div>';
       return;
     }
 
@@ -952,37 +1410,141 @@ async function doSearch(offset) {
   currentOffset = offset || 0;
   const limit = parseInt(document.getElementById('search-limit').value) || 10;
   const semantic = document.getElementById('search-semantic').checked;
+  const category = document.getElementById('filter-category').value;
 
+  setLoading('btn-search', true);
   try {
-    const data = await api('/search?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + currentOffset + '&semantic=' + semantic);
+    let url = '/search?q=' + encodeURIComponent(q) + '&limit=' + limit + '&offset=' + currentOffset + '&semantic=' + semantic;
+    if (category) url += '&category=' + encodeURIComponent(category);
+
+    const data = await api(url);
+    lastSearchResults = data.results || [];
+
+    // Client-side filters (importance, date) — applied post-search
+    let results = lastSearchResults;
+    const impMin = parseInt(document.getElementById('filter-imp-min').value) || 0;
+    const impMax = parseInt(document.getElementById('filter-imp-max').value) || 999;
+    const dateFrom = document.getElementById('filter-date-from').value;
+    const dateTo = document.getElementById('filter-date-to').value;
+    if (impMin > 0) results = results.filter(r => r.importance >= impMin);
+    if (impMax < 999) results = results.filter(r => r.importance <= impMax);
+    if (dateFrom) results = results.filter(r => r.created_at >= dateFrom);
+    if (dateTo) results = results.filter(r => r.created_at <= dateTo + 'T23:59:59');
+
     lastHasMore = data.has_more;
     document.getElementById('search-total').textContent = data.total + ' results' + (data.total > limit ? ' (page ' + (Math.floor(currentOffset / limit) + 1) + ')' : '');
     document.getElementById('search-prev').disabled = currentOffset === 0;
     document.getElementById('search-next').disabled = !data.has_more;
 
     const tbody = document.getElementById('search-results-body');
-    if (data.results.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="7" class="empty">No results found</td></tr>';
+    if (results.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="7"><div class="empty"><span class="empty-icon" aria-hidden="true">&#128270;</span><div class="empty-title">No results</div>Try different keywords or disable semantic search</div></td></tr>';
     } else {
-      tbody.innerHTML = data.results.map(r =>
-        '<tr>' +
+      tbody.innerHTML = results.map(r =>
+        '<tr class="memory-row" data-id="' + r.id + '">' +
         '<td style="color:var(--text-dim)">#' + r.id + '</td>' +
-        '<td title="' + esc(r.content) + '">' + esc(truncate(r.content)) + '</td>' +
+        '<td class="memory-content-cell" onclick="toggleDetail(' + r.id + ')" style="cursor:pointer" title="Click to expand">' + esc(truncate(r.content)) + '</td>' +
         '<td><span class="badge badge-cat">' + esc(r.category) + '</span></td>' +
         '<td>' + stars(r.importance) + '</td>' +
         '<td>' + decayBar(r.decay_score) + '</td>' +
         '<td style="font-size:11px;color:var(--text-dim)">' + fmtDate(r.created_at) + '</td>' +
-        '<td><button class="btn btn-danger btn-sm" onclick="doDelete(' + r.id + ', this)">Del</button></td>' +
-        '</tr>'
+        '<td style="white-space:nowrap"><button class="btn btn-sm" onclick="startEdit(' + r.id + ', event)" title="Edit">Edit</button> <button class="btn btn-danger btn-sm" onclick="doDelete(' + r.id + ', this)" title="Delete">Del</button></td>' +
+        '</tr>' +
+        '<tr class="memory-detail-row" id="detail-' + r.id + '" style="display:none"><td colspan="7">' +
+        '<div class="memory-detail open">' +
+        '<div class="memory-detail-grid"><div><dt>Category</dt><dd><span class="badge badge-cat">' + esc(r.category) + '</span></dd></div>' +
+        '<div><dt>Importance</dt><dd>' + stars(r.importance) + '</dd></div>' +
+        '<div><dt>Decay Score</dt><dd>' + decayBar(r.decay_score) + '</dd></div>' +
+        '<div><dt>Created</dt><dd>' + fmtDate(r.created_at) + '</dd></div>' +
+        '<div><dt>Access Count</dt><dd>' + (r.access_count || 0) + '</dd></div>' +
+        '<div><dt>ID</dt><dd>#' + r.id + '</dd></div></div>' +
+        '<div class="memory-full-content">' + esc(r.content) + '</div>' +
+        '</div></td></tr>'
       ).join('');
     }
     document.getElementById('search-results-card').style.display = 'block';
   } catch (e) { toast(e.message, 'error'); }
+  finally { setLoading('btn-search', false); }
 }
 
 function searchPage(dir) {
   const limit = parseInt(document.getElementById('search-limit').value) || 10;
   doSearch(Math.max(0, currentOffset + dir * limit));
+}
+
+function toggleDetail(id) {
+  const row = document.getElementById('detail-' + id);
+  if (!row) return;
+  row.style.display = row.style.display === 'none' ? '' : 'none';
+}
+
+/* ── Inline Edit ──────────────────────────────────────────────────── */
+function startEdit(id, event) {
+  event.stopPropagation();
+  const mem = lastSearchResults.find(r => r.id === id);
+  if (!mem) return toast('Memory not found in results', 'error');
+
+  const row = document.getElementById('detail-' + id);
+  row.style.display = '';
+  const detail = row.querySelector('.memory-detail');
+  detail.innerHTML =
+    '<div class="form-group"><label>Content</label><textarea class="inline-edit" id="edit-content-' + id + '" rows="4">' + esc(mem.content) + '</textarea></div>' +
+    '<div class="form-row">' +
+    '<div class="form-group"><label>Category</label><select class="inline-edit" id="edit-cat-' + id + '">' +
+    ['general','project','trading','finance','person','preference','task','decision'].map(c =>
+      '<option value="' + c + '"' + (c === mem.category ? ' selected' : '') + '>' + c + '</option>'
+    ).join('') + '</select></div>' +
+    '<div class="form-group"><label>Importance</label><input type="number" class="inline-edit" id="edit-imp-' + id + '" value="' + mem.importance + '" min="1" max="5"></div>' +
+    '<div class="form-group" style="flex:0 0 auto"><button class="btn btn-primary btn-sm" onclick="saveEdit(' + id + ')">Save</button> <button class="btn btn-sm" onclick="cancelEdit(' + id + ')">Cancel</button></div></div>';
+}
+
+async function saveEdit(id) {
+  const content = document.getElementById('edit-content-' + id).value.trim();
+  const category = document.getElementById('edit-cat-' + id).value;
+  const importance = parseInt(document.getElementById('edit-imp-' + id).value) || 1;
+  if (!content) return toast('Content is required', 'error');
+
+  try {
+    await api('/memories/' + id, { method: 'PUT', body: JSON.stringify({ content, category, importance }) });
+    toast('Memory #' + id + ' updated');
+    doSearch(currentOffset);
+  } catch (e) { toast(e.message, 'error'); }
+}
+
+function cancelEdit(id) {
+  document.getElementById('detail-' + id).style.display = 'none';
+}
+
+/* ── CSV/JSON export from search results ──────────────────────────── */
+function exportSearchCSV() {
+  if (!lastSearchResults.length) return toast('No results to export', 'error');
+  const headers = ['id','content','category','importance','decay_score','created_at'];
+  const rows = [headers.join(',')];
+  lastSearchResults.forEach(r => {
+    rows.push(headers.map(h => {
+      let val = r[h] || '';
+      if (typeof val === 'string' && (val.includes(',') || val.includes('"') || val.includes('\n'))) {
+        val = '"' + val.replace(/"/g, '""') + '"';
+      }
+      return val;
+    }).join(','));
+  });
+  downloadFile(rows.join('\n'), 'kore-search-' + agentId() + '.csv', 'text/csv');
+}
+
+function exportSearchJSON() {
+  if (!lastSearchResults.length) return toast('No results to export', 'error');
+  downloadFile(JSON.stringify({ results: lastSearchResults }, null, 2), 'kore-search-' + agentId() + '.json', 'application/json');
+}
+
+function downloadFile(content, filename, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 /* ── Save ──────────────────────────────────────────────────────────── */
@@ -997,11 +1559,13 @@ async function doSave() {
   const ttl = document.getElementById('save-ttl').value;
   if (ttl) payload.ttl_hours = parseInt(ttl);
 
+  setLoading('btn-save', true);
   try {
     const data = await api('/save', { method: 'POST', body: JSON.stringify(payload) });
     toast('Memory #' + data.id + ' saved (importance: ' + data.importance + ')');
     document.getElementById('save-content').value = '';
   } catch (e) { toast(e.message, 'error'); }
+  finally { setLoading('btn-save', false); }
 }
 
 /* ── Delete ────────────────────────────────────────────────────────── */
@@ -1011,6 +1575,8 @@ async function doDelete(id, btn) {
     await api('/memories/' + id, { method: 'DELETE' });
     toast('Memory #' + id + ' deleted');
     btn.closest('tr').remove();
+    const detail = document.getElementById('detail-' + id);
+    if (detail) detail.remove();
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -1022,10 +1588,10 @@ async function doTagSearch() {
     const data = await api('/tags/' + encodeURIComponent(tag) + '/memories');
     const div = document.getElementById('tag-search-results');
     if (data.results.length === 0) {
-      div.innerHTML = '<div class="empty">No memories with tag "' + esc(tag) + '"</div>';
+      div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#9856;</span><div class="empty-title">No results</div>No memories with tag "' + esc(tag) + '"</div>';
       return;
     }
-    div.innerHTML = '<table><thead><tr><th>ID</th><th>Content</th><th>Category</th><th>Importance</th></tr></thead><tbody>' +
+    div.innerHTML = '<table aria-label="Tag search results"><thead><tr><th>ID</th><th>Content</th><th>Category</th><th>Importance</th></tr></thead><tbody>' +
       data.results.map(r =>
         '<tr><td>#' + r.id + '</td><td>' + esc(truncate(r.content)) + '</td><td><span class="badge badge-cat">' + esc(r.category) + '</span></td><td>' + stars(r.importance) + '</td></tr>'
       ).join('') + '</tbody></table>';
@@ -1076,8 +1642,8 @@ async function doGetRelations() {
   try {
     const data = await api('/memories/' + id + '/relations');
     const div = document.getElementById('rel-results');
-    if (!data.relations.length) { div.innerHTML = '<div class="empty">No relations</div>'; return; }
-    div.innerHTML = '<table><thead><tr><th>Source</th><th>Target</th><th>Relation</th><th>Content</th></tr></thead><tbody>' +
+    if (!data.relations.length) { div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#8644;</span><div class="empty-title">No relations</div>This memory has no connections</div>'; return; }
+    div.innerHTML = '<table aria-label="Memory relations"><thead><tr><th>Source</th><th>Target</th><th>Relation</th><th>Content</th></tr></thead><tbody>' +
       data.relations.map(r =>
         '<tr><td>#' + r.source_id + '</td><td>#' + r.target_id + '</td><td><span class="badge badge-cat">' + esc(r.relation) + '</span></td><td>' + esc(truncate(r.related_content || '', 60)) + '</td></tr>'
       ).join('') + '</tbody></table>';
@@ -1091,7 +1657,7 @@ async function doAddRelation() {
   if (!source || !target) return toast('Source and target required', 'error');
   try {
     await api('/memories/' + source + '/relations', { method: 'POST', body: JSON.stringify({ target_id: parseInt(target), relation }) });
-    toast('Relation created: #' + source + ' → #' + target);
+    toast('Relation created: #' + source + ' \u2192 #' + target);
   } catch (e) { toast(e.message, 'error'); }
 }
 
@@ -1100,10 +1666,12 @@ async function doTimeline() {
   const subject = document.getElementById('timeline-subject').value.trim();
   if (!subject) return toast('Enter a subject', 'error');
   const limit = parseInt(document.getElementById('timeline-limit').value) || 20;
+
+  setLoading('btn-timeline', true);
   try {
     const data = await api('/timeline?subject=' + encodeURIComponent(subject) + '&limit=' + limit);
     const div = document.getElementById('timeline-results');
-    if (!data.results.length) { div.innerHTML = '<div class="empty"><span class="empty-icon">&#8982;</span>No timeline entries for "' + esc(subject) + '"</div>'; return; }
+    if (!data.results.length) { div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#8982;</span><div class="empty-title">No timeline entries</div>No memories found for "' + esc(subject) + '"</div>'; return; }
     div.innerHTML = '<div class="timeline">' + data.results.map(r =>
       '<div class="timeline-item">' +
       '<div class="timeline-date">' + fmtDate(r.created_at) + ' &middot; <span class="badge badge-cat">' + esc(r.category) + '</span> &middot; ' + decayBar(r.decay_score) + '</div>' +
@@ -1111,81 +1679,187 @@ async function doTimeline() {
       '</div>'
     ).join('') + '</div>';
   } catch (e) { toast(e.message, 'error'); }
+  finally { setLoading('btn-timeline', false); }
+}
+
+/* ── Archive ───────────────────────────────────────────────────────── */
+async function loadArchive() {
+  const div = document.getElementById('archive-list');
+  div.innerHTML = '<div class="loading-overlay"><span class="spinner"></span> Loading archived memories...</div>';
+  try {
+    const data = await api('/archive?limit=50');
+    if (!data.results || data.results.length === 0) {
+      div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#128230;</span><div class="empty-title">No archived memories</div>Archive memories from the search results to see them here</div>';
+      return;
+    }
+    div.innerHTML = '<table aria-label="Archived memories"><thead><tr><th>ID</th><th>Content</th><th>Category</th><th>Importance</th><th>Created</th><th></th></tr></thead><tbody>' +
+      data.results.map(r =>
+        '<tr><td>#' + r.id + '</td><td>' + esc(truncate(r.content)) + '</td><td><span class="badge badge-cat">' + esc(r.category) + '</span></td><td>' + stars(r.importance) + '</td><td style="font-size:11px;color:var(--text-dim)">' + fmtDate(r.created_at) + '</td>' +
+        '<td><button class="btn btn-sm btn-primary" onclick="doRestore(' + r.id + ')">Restore</button></td></tr>'
+      ).join('') + '</tbody></table>';
+  } catch (e) {
+    div.innerHTML = '<div class="empty"><span class="empty-icon" aria-hidden="true">&#9888;</span><div class="empty-title">Error loading archive</div>' + esc(e.message) + '</div>';
+  }
+}
+
+async function doRestore(id) {
+  try {
+    await api('/memories/' + id + '/restore', { method: 'POST' });
+    toast('Memory #' + id + ' restored');
+    loadArchive();
+  } catch (e) { toast(e.message, 'error'); }
 }
 
 /* ── Maintenance ───────────────────────────────────────────────────── */
 async function doDecay() {
-  const btn = document.getElementById('btn-decay');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  setLoading('btn-decay', true);
   try {
     const data = await api('/decay/run', { method: 'POST' });
     const el = document.getElementById('decay-result');
-    el.textContent = '✓ ' + data.updated + ' memories updated';
+    el.textContent = '\u2713 ' + data.updated + ' memories updated';
     el.style.display = 'block';
     toast('Decay pass complete: ' + data.updated + ' updated');
   } catch (e) { toast(e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Run Decay'; }
+  finally { setLoading('btn-decay', false); }
 }
 
 async function doCompress() {
-  const btn = document.getElementById('btn-compress');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  setLoading('btn-compress', true);
   try {
     const data = await api('/compress', { method: 'POST' });
     const el = document.getElementById('compress-result');
-    el.textContent = '✓ ' + data.clusters_found + ' clusters, ' + data.memories_merged + ' merged, ' + data.new_records_created + ' created';
+    el.textContent = '\u2713 ' + data.clusters_found + ' clusters, ' + data.memories_merged + ' merged, ' + data.new_records_created + ' created';
     el.style.display = 'block';
     toast('Compression complete');
   } catch (e) { toast(e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Run Compress'; }
+  finally { setLoading('btn-compress', false); }
 }
 
 async function doCleanup() {
-  const btn = document.getElementById('btn-cleanup');
-  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>';
+  setLoading('btn-cleanup', true);
   try {
     const data = await api('/cleanup', { method: 'POST' });
     const el = document.getElementById('cleanup-result');
-    el.textContent = '✓ ' + data.removed + ' expired memories removed';
+    el.textContent = '\u2713 ' + data.removed + ' expired memories removed';
     el.style.display = 'block';
     toast('Cleanup complete: ' + data.removed + ' removed');
   } catch (e) { toast(e.message, 'error'); }
-  finally { btn.disabled = false; btn.textContent = 'Run Cleanup'; }
+  finally { setLoading('btn-cleanup', false); }
+}
+
+/* ── Metrics ───────────────────────────────────────────────────────── */
+async function loadMetrics() {
+  try {
+    const exp = await api('/export');
+    const mems = exp.memories || [];
+
+    // Category distribution bar chart
+    const cats = {};
+    mems.forEach(m => { cats[m.category] = (cats[m.category] || 0) + 1; });
+    const catDiv = document.getElementById('metrics-categories');
+    if (Object.keys(cats).length === 0) {
+      catDiv.innerHTML = '<div class="empty">No data</div>';
+    } else {
+      const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+      const maxCat = sorted[0][1];
+      catDiv.innerHTML = '<div class="chart-bar">' + sorted.map(([cat, count]) =>
+        '<div class="chart-col"><div class="value">' + count + '</div><div class="bar" style="height:' + Math.max(4, Math.round((count / maxCat) * 100)) + 'px"></div><div class="label">' + esc(cat) + '</div></div>'
+      ).join('') + '</div>';
+    }
+
+    // Importance distribution
+    const imps = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    mems.forEach(m => { imps[m.importance] = (imps[m.importance] || 0) + 1; });
+    const impDiv = document.getElementById('metrics-importance');
+    const maxImp = Math.max(...Object.values(imps), 1);
+    impDiv.innerHTML = '<div class="chart-bar">' + Object.entries(imps).map(([level, count]) =>
+      '<div class="chart-col"><div class="value">' + count + '</div><div class="bar" style="height:' + Math.max(4, Math.round((count / maxImp) * 100)) + 'px;background:var(--amber)"></div><div class="label">\u2605' + level + '</div></div>'
+    ).join('') + '</div>';
+
+    // Decay distribution (buckets: 0-20%, 20-40%, 40-60%, 60-80%, 80-100%)
+    const decayBuckets = { '0-20%': 0, '20-40%': 0, '40-60%': 0, '60-80%': 0, '80-100%': 0 };
+    mems.forEach(m => {
+      const pct = (m.decay_score || 0) * 100;
+      if (pct < 20) decayBuckets['0-20%']++;
+      else if (pct < 40) decayBuckets['20-40%']++;
+      else if (pct < 60) decayBuckets['40-60%']++;
+      else if (pct < 80) decayBuckets['60-80%']++;
+      else decayBuckets['80-100%']++;
+    });
+    const decayDiv = document.getElementById('metrics-decay');
+    const maxDecay = Math.max(...Object.values(decayBuckets), 1);
+    const decayColors = ['var(--red)', 'var(--amber)', 'var(--amber)', 'var(--green)', 'var(--green)'];
+    let di = 0;
+    decayDiv.innerHTML = '<div class="chart-bar">' + Object.entries(decayBuckets).map(([bucket, count]) =>
+      '<div class="chart-col"><div class="value">' + count + '</div><div class="bar" style="height:' + Math.max(4, Math.round((count / maxDecay) * 100)) + 'px;background:' + decayColors[di++] + '"></div><div class="label">' + bucket + '</div></div>'
+    ).join('') + '</div>';
+
+    // System stats
+    const sysDiv = document.getElementById('metrics-system');
+    const totalMems = mems.length;
+    const avgDecay = totalMems > 0 ? (mems.reduce((s, m) => s + (m.decay_score || 0), 0) / totalMems).toFixed(2) : '—';
+    const avgImp = totalMems > 0 ? (mems.reduce((s, m) => s + m.importance, 0) / totalMems).toFixed(1) : '—';
+    const oldestDate = totalMems > 0 ? fmtDate(mems.reduce((min, m) => m.created_at < min ? m.created_at : min, mems[0].created_at)) : '—';
+    sysDiv.innerHTML =
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">' +
+      '<div class="stat"><div class="stat-value accent">' + totalMems + '</div><div class="stat-label">Total</div></div>' +
+      '<div class="stat"><div class="stat-value green">' + avgDecay + '</div><div class="stat-label">Avg Decay</div></div>' +
+      '<div class="stat"><div class="stat-value" style="color:var(--amber)">' + avgImp + '</div><div class="stat-label">Avg Importance</div></div>' +
+      '<div class="stat"><div class="stat-value" style="font-size:14px">' + oldestDate + '</div><div class="stat-label">Oldest Memory</div></div>' +
+      '</div>';
+
+  } catch (e) {
+    ['metrics-categories', 'metrics-importance', 'metrics-decay', 'metrics-system'].forEach(id => {
+      document.getElementById(id).innerHTML = '<div class="empty">Error loading metrics</div>';
+    });
+  }
 }
 
 /* ── Export / Import ───────────────────────────────────────────────── */
-async function doExport() {
+async function doExport(format) {
+  const btnId = format === 'csv' ? 'btn-export-csv' : 'btn-export-json';
+  setLoading(btnId, true);
   try {
     const data = await api('/export');
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'kore-export-' + agentId() + '-' + new Date().toISOString().slice(0, 10) + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    toast('Exported ' + data.total + ' memories');
+    const memories = data.memories || [];
+    const dateStr = new Date().toISOString().slice(0, 10);
+
+    if (format === 'csv') {
+      const headers = ['id', 'content', 'category', 'importance', 'decay_score', 'created_at'];
+      const rows = [headers.join(',')];
+      memories.forEach(m => {
+        rows.push(headers.map(h => {
+          let val = m[h] != null ? String(m[h]) : '';
+          if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+            val = '"' + val.replace(/"/g, '""') + '"';
+          }
+          return val;
+        }).join(','));
+      });
+      downloadFile(rows.join('\n'), 'kore-export-' + agentId() + '-' + dateStr + '.csv', 'text/csv');
+    } else {
+      downloadFile(JSON.stringify(data, null, 2), 'kore-export-' + agentId() + '-' + dateStr + '.json', 'application/json');
+    }
+    toast('Exported ' + memories.length + ' memories as ' + format.toUpperCase());
   } catch (e) { toast(e.message, 'error'); }
+  finally { setLoading(btnId, false); }
 }
 
 async function doImport() {
   const file = document.getElementById('import-file').files[0];
   if (!file) return toast('Select a JSON file', 'error');
+  setLoading('btn-import', true);
   try {
     const text = await file.text();
     const json = JSON.parse(text);
     const memories = json.memories || json;
     if (!Array.isArray(memories)) throw new Error('Invalid format: expected { memories: [...] }');
     const data = await api('/import', { method: 'POST', body: JSON.stringify({ memories }) });
-    document.getElementById('import-result').innerHTML = '<span style="color:var(--green)">✓ ' + data.imported + ' memories imported</span>';
+    document.getElementById('import-result').innerHTML = '<span style="color:var(--green)">\u2713 ' + data.imported + ' memories imported</span>';
     toast('Imported ' + data.imported + ' memories');
   } catch (e) { toast(e.message, 'error'); }
+  finally { setLoading('btn-import', false); }
 }
-
-/* ── Keyboard shortcut: Enter per search ───────────────────────────── */
-document.getElementById('search-q').addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
-document.getElementById('tag-search-q').addEventListener('keydown', e => { if (e.key === 'Enter') doTagSearch(); });
-document.getElementById('timeline-subject').addEventListener('keydown', e => { if (e.key === 'Enter') doTimeline(); });
 
 /* ── Init ──────────────────────────────────────────────────────────── */
 loadOverview();

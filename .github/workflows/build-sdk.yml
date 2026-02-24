@@ -2,6 +2,8 @@ name: Build JS SDK
 
 on:
   workflow_dispatch:
+  push:
+    tags: ["v*"]
 
 jobs:
   build:
@@ -10,8 +12,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '18'
-      - run: cd sdk/js && npm install && npm run build
+          node-version: '20'
+      - name: Cache node_modules
+        uses: actions/cache@v4
+        with:
+          path: sdk/js/node_modules
+          key: ${{ runner.os }}-node-20-${{ hashFiles('sdk/js/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-20-
+      - run: cd sdk/js && npm ci && npm run build && npm test
       - uses: actions/upload-artifact@v4
         with:
           name: sdk-dist

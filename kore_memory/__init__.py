@@ -2,16 +2,18 @@
 
 from .client import (
     AsyncKoreClient,
-    KoreClient,
     KoreAuthError,
+    KoreClient,
     KoreError,
     KoreNotFoundError,
     KoreRateLimitError,
     KoreServerError,
     KoreValidationError,
 )
+from .config import VERSION as __version__
 
 __all__ = [
+    "__version__",
     "KoreClient",
     "AsyncKoreClient",
     "KoreError",
