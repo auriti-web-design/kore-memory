@@ -125,10 +125,8 @@ export interface MemoryImportResponse {
 export interface HealthResponse {
   status: string;
   version: string;
-  capabilities: {
-    semantic_search: boolean;
-    mcp_server: boolean;
-  };
+  semantic_search: boolean;
+  database: string;
 }
 
 // Client configuration

@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.11", "3.12"]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -81,7 +81,7 @@ jobs:
             ${{ runner.os }}-pip-3.12-
 
       - name: Install dependencies
-        run: pip install -e ".[dev]"
+        run: pip install -e ".[dev,mcp]"
 
       - name: Run tests with coverage
         run: pytest tests/ -v --cov=kore_memory --cov-report=xml --cov-report=term-missing
@@ -102,12 +102,15 @@ jobs:
           print(f'{rate * 100:.1f}')
           ")
           echo "Coverage: ${COVERAGE}%"
-          THRESHOLD=80
-          if python -c "exit(0 if float('${COVERAGE}') < ${THRESHOLD} else 1)"; then
-            echo "::warning::Coverage ${COVERAGE}% is below the ${THRESHOLD}% threshold"
-          else
-            echo "Coverage ${COVERAGE}% meets the ${THRESHOLD}% threshold"
-          fi
+          THRESHOLD=85
+          python -c "
+          cov = float('${COVERAGE}')
+          threshold = ${THRESHOLD}
+          if cov < threshold:
+              print(f'ERRORE: Coverage {cov}% sotto soglia {threshold}%')
+              exit(1)
+          print(f'OK: Coverage {cov}% >= {threshold}%')
+          "
 
   test-js-sdk:
     runs-on: ubuntu-latest
@@ -144,10 +147,10 @@ jobs:
         run: pip install bandit pip-audit -e ".[dev]"
 
       - name: Run bandit (SAST)
-        run: bandit -r kore_memory/ -c pyproject.toml || true
+        run: bandit -r kore_memory/ -c pyproject.toml
 
       - name: Run pip-audit (CVE check)
-        run: pip-audit --strict || true
+        run: pip-audit --strict
 
   lint:
     runs-on: ubuntu-latest

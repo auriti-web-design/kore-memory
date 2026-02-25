@@ -36,6 +36,10 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/timeline": (60, 60),     # 60 req/min
     "/decay/run": (5, 3600),   # 5 req/ora
     "/compress": (2, 3600),    # 2 req/ora
+    "/export": (10, 3600),     # 10 req/ora
+    "/import": (5, 3600),      # 5 req/ora
+    "/cleanup": (10, 3600),    # 10 req/ora
+    "/delete": (120, 60),      # 120 delete/min
 }
 
 # ── Embedder ──────────────────────────────────────────────────────────────────
@@ -61,4 +65,4 @@ AUDIT_LOG = os.getenv("KORE_AUDIT_LOG", "0") == "1"
 
 # ── Versione ──────────────────────────────────────────────────────────────────
 
-VERSION = "0.9.0"
+VERSION = "1.0.0"
