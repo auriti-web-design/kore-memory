@@ -1,12 +1,12 @@
 """
-Kore — Configurazione centralizzata
-Tutte le variabili d'ambiente e costanti in un unico punto.
+Kore — Centralized configuration
+All environment variables and constants in a single place.
 """
 
 import os
 from pathlib import Path
 
-# ── Percorsi ──────────────────────────────────────────────────────────────────
+# ── Paths ─────────────────────────────────────────────────────────────────────
 
 _PROJECT_ROOT = Path(__file__).parent.parent
 DATA_DIR = _PROJECT_ROOT / "data"
@@ -34,11 +34,11 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
     "/save": (30, 60),         # 30 req/min
     "/search": (60, 60),       # 60 req/min
     "/timeline": (60, 60),     # 60 req/min
-    "/decay/run": (5, 3600),   # 5 req/ora
-    "/compress": (2, 3600),    # 2 req/ora
-    "/export": (10, 3600),     # 10 req/ora
-    "/import": (5, 3600),      # 5 req/ora
-    "/cleanup": (10, 3600),    # 10 req/ora
+    "/decay/run": (5, 3600),   # 5 req/hour
+    "/compress": (2, 3600),    # 2 req/hour
+    "/export": (10, 3600),     # 10 req/hour
+    "/import": (5, 3600),      # 5 req/hour
+    "/cleanup": (10, 3600),    # 10 req/hour
     "/delete": (120, 60),      # 120 delete/min
 }
 
@@ -63,6 +63,6 @@ ENTITY_EXTRACTION = os.getenv("KORE_ENTITY_EXTRACTION", "0") == "1"
 
 AUDIT_LOG = os.getenv("KORE_AUDIT_LOG", "0") == "1"
 
-# ── Versione ──────────────────────────────────────────────────────────────────
+# ── Version ───────────────────────────────────────────────────────────────────
 
-VERSION = "1.0.0"
+VERSION = "1.0.1"
