@@ -1,11 +1,11 @@
 """
-Kore — Server MCP (Model Context Protocol)
-Espone save, search, timeline, decay e compress come tools MCP
-per integrazione diretta con Claude, Cursor, e altri client MCP.
+Kore — MCP Server (Model Context Protocol)
+Exposes save, search, timeline, decay and compress as MCP tools
+for direct integration with Claude, Cursor, and other MCP clients.
 
-Uso:
+Usage:
   python -m src.mcp_server                     # stdio (default)
-  python -m src.mcp_server --transport sse      # SSE per web
+  python -m src.mcp_server --transport sse      # SSE for web
 """
 
 from __future__ import annotations
@@ -29,7 +29,7 @@ from .repository import (
     update_memory,
 )
 
-# Inizializza DB prima di qualsiasi operazione
+# Initialize DB before any operation
 init_db()
 
 mcp = FastMCP(
@@ -43,7 +43,7 @@ _SAFE_AGENT_RE = _re.compile(r'[^a-zA-Z0-9_\-]')
 
 
 def _sanitize_agent_id(agent_id: str) -> str:
-    """Sanitizza agent_id: solo caratteri alfanumerici, dash e underscore, max 64 chars."""
+    """Sanitize agent_id: only alphanumeric characters, dashes and underscores, max 64 chars."""
     safe = _SAFE_AGENT_RE.sub("", agent_id)
     return (safe or "default")[:64]
 
@@ -58,9 +58,9 @@ def memory_save(
     agent_id: str = "default",
 ) -> dict:
     """
-    Salva un ricordo nella memoria persistente.
-    L'importanza viene auto-calcolata se 0 o non specificata (1-5 = esplicita).
-    Categorie: general, project, trading, finance, person, preference, task, decision.
+    Save a memory to persistent storage.
+    Importance is auto-calculated if 0 or not specified (1-5 = explicit).
+    Categories: general, project, trading, finance, person, preference, task, decision.
     """
     req = MemorySaveRequest(content=content, category=category, importance=importance or None)
     mem_id, imp = save_memory(req, agent_id=_sanitize_agent_id(agent_id))
@@ -76,9 +76,9 @@ def memory_search(
     agent_id: str = "default",
 ) -> dict:
     """
-    Cerca nella memoria. Supporta ricerca semantica (embedding) e full-text.
-    Restituisce le memorie più rilevanti ordinate per score.
-    Lascia category vuoto per cercare in tutte le categorie.
+    Search memory. Supports semantic (embedding) and full-text search.
+    Returns the most relevant memories sorted by score.
+    Leave category empty to search across all categories.
     """
     results, next_cursor, total_count = search_memories(
         query=query, limit=limit, category=category or None,
@@ -109,8 +109,8 @@ def memory_timeline(
     agent_id: str = "default",
 ) -> dict:
     """
-    Cronologia delle memorie su un argomento, ordinate dal più vecchio al più recente.
-    Utile per ricostruire la storia di un progetto o una persona.
+    Timeline of memories on a subject, ordered from oldest to most recent.
+    Useful for reconstructing the history of a project or a person.
     """
     results, next_cursor, total_count = get_timeline(
         subject=subject, limit=limit, agent_id=_sanitize_agent_id(agent_id),
@@ -134,8 +134,8 @@ def memory_timeline(
 @mcp.tool()
 def memory_decay_run(agent_id: str = "default") -> dict:
     """
-    Ricalcola il decay score di tutte le memorie dell'agente.
-    Le memorie non accedute decadono nel tempo secondo la curva di Ebbinghaus.
+    Recalculate the decay score of all memories for the agent.
+    Memories that have not been accessed decay over time following the Ebbinghaus curve.
     """
     updated = run_decay_pass(agent_id=_sanitize_agent_id(agent_id))
     return {"updated": updated, "message": "Decay pass complete"}
@@ -144,8 +144,8 @@ def memory_decay_run(agent_id: str = "default") -> dict:
 @mcp.tool()
 def memory_compress(agent_id: str = "default") -> dict:
     """
-    Comprime memorie simili unendole in un singolo record più ricco.
-    Riduce la ridondanza mantenendo le informazioni importanti.
+    Compress similar memories by merging them into a single richer record.
+    Reduces redundancy while preserving important information.
     """
     from .compressor import run_compression
     result = run_compression(agent_id=_sanitize_agent_id(agent_id))
@@ -158,7 +158,7 @@ def memory_compress(agent_id: str = "default") -> dict:
 
 @mcp.tool()
 def memory_export(agent_id: str = "default") -> dict:
-    """Esporta tutte le memorie attive dell'agente per backup."""
+    """Export all active memories for the agent as a backup."""
     data = export_memories(agent_id=_sanitize_agent_id(agent_id))
     return {"memories": data, "total": len(data)}
 
@@ -169,8 +169,8 @@ def memory_delete(
     agent_id: str = "default",
 ) -> dict:
     """
-    Elimina una memoria per id. La memoria deve appartenere all'agente specificato.
-    Restituisce success=True se eliminata, False se non trovata.
+    Delete a memory by id. The memory must belong to the specified agent.
+    Returns success=True if deleted, False if not found.
     """
     deleted = delete_memory(memory_id, agent_id=_sanitize_agent_id(agent_id))
     return {
@@ -188,9 +188,9 @@ def memory_update(
     agent_id: str = "default",
 ) -> dict:
     """
-    Aggiorna una memoria esistente. Solo i campi forniti vengono modificati.
-    Rigenera l'embedding se il contenuto cambia.
-    Lascia vuoto/0 i campi che non vuoi modificare.
+    Update an existing memory. Only the provided fields are modified.
+    Regenerates the embedding if the content changes.
+    Leave fields empty/0 for those you do not want to modify.
     """
     req = MemoryUpdateRequest(
         content=content or None,
@@ -210,9 +210,9 @@ def memory_save_batch(
     agent_id: str = "default",
 ) -> dict:
     """
-    Salva più memorie in batch. Ogni elemento deve avere almeno 'content'.
-    Campi opzionali: category (default 'general'), importance (None=auto, 1-5=esplicita).
-    Massimo 100 memorie per batch.
+    Save multiple memories in a batch. Each item must have at least 'content'.
+    Optional fields: category (default 'general'), importance (None=auto, 1-5=explicit).
+    Maximum 100 memories per batch.
     """
     saved = []
     errors = 0
@@ -241,8 +241,8 @@ def memory_add_tags(
     agent_id: str = "default",
 ) -> dict:
     """
-    Aggiunge tag a una memoria. I tag vengono normalizzati in minuscolo.
-    Restituisce il numero di tag aggiunti.
+    Add tags to a memory. Tags are normalized to lowercase.
+    Returns the number of tags added.
     """
     count = add_tags(memory_id, tags, agent_id=_sanitize_agent_id(agent_id))
     return {"count": count, "message": f"{count} tags added"}
@@ -255,7 +255,7 @@ def memory_search_by_tag(
     limit: int = 20,
 ) -> dict:
     """
-    Cerca memorie per tag. Restituisce memorie ordinate per importanza e data.
+    Search memories by tag. Returns memories sorted by importance and date.
     """
     results = search_by_tag(tag, agent_id=_sanitize_agent_id(agent_id), limit=limit)
     return {
@@ -282,8 +282,8 @@ def memory_add_relation(
     agent_id: str = "default",
 ) -> dict:
     """
-    Crea una relazione tra due memorie (grafo). Entrambe devono appartenere all'agente.
-    Tipi comuni: related, causes, blocks, extends, contradicts.
+    Create a relation between two memories (graph). Both must belong to the agent.
+    Common types: related, causes, blocks, extends, contradicts.
     """
     created = add_relation(source_id, target_id, relation, agent_id=_sanitize_agent_id(agent_id))
     return {
@@ -295,8 +295,8 @@ def memory_add_relation(
 @mcp.tool()
 def memory_cleanup(agent_id: str = "default") -> dict:
     """
-    Elimina memorie con TTL scaduto per l'agente specificato.
-    Restituisce il numero di record rimossi.
+    Delete memories with an expired TTL for the specified agent.
+    Returns the number of records removed.
     """
     removed = cleanup_expired(agent_id=_sanitize_agent_id(agent_id))
     return {"removed": removed, "message": f"{removed} expired memories cleaned up"}
@@ -308,8 +308,8 @@ def memory_import(
     agent_id: str = "default",
 ) -> dict:
     """
-    Importa memorie da una lista di dict. Ogni elemento deve avere almeno 'content'.
-    Campi opzionali: category, importance. Massimo 500 memorie.
+    Import memories from a list of dicts. Each item must have at least 'content'.
+    Optional fields: category, importance. Maximum 500 memories.
     """
     count = import_memories(memories, agent_id=_sanitize_agent_id(agent_id))
     return {"imported": count, "message": f"{count} memories imported"}
@@ -319,7 +319,7 @@ def memory_import(
 
 @mcp.resource("kore://health")
 def health_resource() -> str:
-    """Stato del server Kore."""
+    """Kore server health status."""
     from . import config
     from .repository import _embeddings_available
     return (

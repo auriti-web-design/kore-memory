@@ -59,15 +59,15 @@ def _loaded_key() -> str:
 def _is_local(request: Request) -> bool:
     client_host = request.client.host if request.client else ""
     trusted = {"127.0.0.1", "::1", "localhost"}
-    # "testclient" solo in ambienti di test espliciti
+    # "testclient" only in explicit test environments
     if os.getenv("KORE_TEST_MODE", "0") == "1":
         trusted.add("testclient")
     return client_host in trusted
 
 
 def _local_only_mode() -> bool:
-    # Rilegge a runtime per supporto override nei test (KORE_LOCAL_ONLY=1)
-    # Default "1" = skip auth per localhost (coerente con config.LOCAL_ONLY)
+    # Re-read at runtime to support override in tests (KORE_LOCAL_ONLY=1)
+    # Default "1" = skip auth for localhost (consistent with config.LOCAL_ONLY)
     return os.getenv("KORE_LOCAL_ONLY", "1") == "1"
 
 

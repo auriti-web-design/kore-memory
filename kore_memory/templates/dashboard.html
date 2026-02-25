@@ -6,7 +6,7 @@
 <title>Kore — Memory Dashboard</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
-/* ── Reset + Variabili ─────────────────────────────────────────────── */
+/* ── Reset + Variables ─────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
@@ -40,7 +40,7 @@
   --transition: 0.2s ease;
 }
 
-/* ── Tema chiaro ──────────────────────────────────────────────────── */
+/* ── Light theme ──────────────────────────────────────────────────── */
 [data-theme="light"] {
   --bg-primary: #fafafa;
   --bg-secondary: #ffffff;
@@ -160,7 +160,7 @@ body {
 }
 .btn-hamburger:hover { background: var(--bg-tertiary); }
 
-/* ── Selettore agente ─────────────────────────────────────────────── */
+/* ── Agent selector ──────────────────────────────────────────────── */
 .agent-select {
   background: var(--bg-tertiary); border: 1px solid var(--border);
   color: var(--text); padding: 6px 10px; border-radius: var(--radius);
@@ -169,7 +169,7 @@ body {
 }
 .agent-select:focus { border-color: var(--accent); }
 
-/* ── Bottone tema ─────────────────────────────────────────────────── */
+/* ── Theme button ────────────────────────────────────────────────── */
 .btn-icon {
   background: none; border: 1px solid var(--border); color: var(--text-muted);
   width: 34px; height: 34px; border-radius: var(--radius);
@@ -184,7 +184,7 @@ body {
   background: var(--bg-primary);
 }
 
-/* ── Pagine ────────────────────────────────────────────────────────── */
+/* ── Pages ─────────────────────────────────────────────────────────── */
 .page { display: none; animation: fadeIn 0.25s ease; }
 .page.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
@@ -216,7 +216,7 @@ body {
 .stat-value.warning { color: var(--warning); }
 .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
 
-/* ── Bottoni ──────────────────────────────────────────────────────── */
+/* ── Buttons ──────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; gap: 6px;
   padding: 8px 16px; border-radius: var(--radius); font-size: 13px;
@@ -264,7 +264,7 @@ body {
 .badge-tag { background: var(--bg-tertiary); color: var(--text-muted); font-size: 12px; padding: 3px 10px; cursor: pointer; }
 .badge-tag:hover { background: var(--accent-muted); color: var(--accent); }
 
-/* ── Tabella ──────────────────────────────────────────────────────── */
+/* ── Table ────────────────────────────────────────────────────────── */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; }
 th { text-align: left; font-size: 11px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
@@ -345,7 +345,7 @@ tr:hover td { background: var(--bg-tertiary); }
 @keyframes spin { to { transform: rotate(360deg); } }
 .loading-center { display: flex; justify-content: center; padding: 48px; }
 
-/* ── Grid layout utilità ──────────────────────────────────────────── */
+/* ── Grid layout utilities ────────────────────────────────────────── */
 .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
 .flex-between { display: flex; justify-content: space-between; align-items: center; }
@@ -365,7 +365,7 @@ tr:hover td { background: var(--bg-tertiary); }
 .memory-card-footer .meta { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 4px; }
 .memory-card-actions { display: flex; gap: 4px; }
 
-/* ── Azioni rapide ────────────────────────────────────────────────── */
+/* ── Quick actions ────────────────────────────────────────────────── */
 .action-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
 .action-card {
   background: var(--bg-secondary); border: 1px solid var(--border);
@@ -378,14 +378,14 @@ tr:hover td { background: var(--bg-tertiary); }
 .action-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
 .action-card p { font-size: 12px; color: var(--text-dim); }
 
-/* ── Distribuzione categorie ──────────────────────────────────────── */
+/* ── Category distribution ────────────────────────────────────────── */
 .cat-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .cat-bar-label { font-size: 12px; color: var(--text-muted); width: 80px; text-align: right; }
 .cat-bar-track { flex: 1; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden; }
 .cat-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease; }
 .cat-bar-count { font-size: 12px; color: var(--text-dim); width: 32px; }
 
-/* ── Grafo canvas ─────────────────────────────────────────────────── */
+/* ── Graph canvas ─────────────────────────────────────────────────── */
 .graph-container { position: relative; }
 #graph-canvas {
   width: 100%; height: calc(100vh - 200px);
@@ -395,7 +395,7 @@ tr:hover td { background: var(--bg-tertiary); }
 #graph-canvas.dragging { cursor: grabbing; }
 #graph-canvas.hovering { cursor: pointer; }
 
-/* Tooltip grafo */
+/* Graph tooltip */
 .graph-tooltip {
   position: absolute; pointer-events: none;
   background: var(--bg-secondary); border: 1px solid var(--border);
@@ -410,7 +410,7 @@ tr:hover td { background: var(--bg-tertiary); }
 .graph-tooltip .tt-content { margin-top: 4px; color: var(--text); line-height: 1.4; }
 .graph-tooltip .tt-relations { margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; }
 
-/* Pannello dettaglio nodo */
+/* Node detail panel */
 .graph-detail {
   position: absolute; top: 12px; right: 12px; width: 280px;
   background: var(--bg-secondary); border: 1px solid var(--border);
@@ -421,7 +421,7 @@ tr:hover td { background: var(--bg-tertiary); }
 .graph-detail.open { display: block; animation: fadeIn 0.2s ease; }
 .graph-detail-close { position: absolute; top: 8px; right: 8px; }
 
-/* Legenda grafo */
+/* Graph legend */
 .graph-legend {
   display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;
   padding: 8px 12px; background: var(--bg-secondary);
@@ -430,7 +430,7 @@ tr:hover td { background: var(--bg-tertiary); }
 .graph-legend-item { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text-muted); }
 .graph-legend-dot { width: 10px; height: 10px; border-radius: 50%; }
 
-/* ── Sessioni ─────────────────────────────────────────────────────── */
+/* ── Sessions ─────────────────────────────────────────────────────── */
 .session-card {
   background: var(--bg-secondary); border: 1px solid var(--border);
   border-radius: var(--radius-lg); padding: 16px; margin-bottom: 10px;
@@ -479,7 +479,7 @@ tr:hover td { background: var(--bg-tertiary); }
   .action-grid { grid-template-columns: 1fr; }
 }
 
-/* ── Focus visibile (accessibilità) ───────────────────────────────── */
+/* ── Visible focus (accessibility) ───────────────────────────────── */
 :focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
@@ -503,7 +503,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
         GitHub
       </a>
-      <a href="https://auritidesign.it/docs/kore-memory/" target="_blank" rel="noopener" title="Documentazione">
+      <a href="https://auritidesign.it/docs/kore-memory/" target="_blank" rel="noopener" title="Documentation">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
         Docs
       </a>
@@ -519,46 +519,46 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
       <h1 class="header-title" id="header-title">Overview</h1>
     </div>
     <div class="header-right">
-      <select class="agent-select" id="agent-select" title="Seleziona agente">
+      <select class="agent-select" id="agent-select" title="Select agent">
         <option value="default">default</option>
       </select>
-      <button class="btn-icon" id="btn-theme" title="Cambia tema" aria-label="Cambia tema">
+      <button class="btn-icon" id="btn-theme" title="Toggle theme" aria-label="Toggle theme">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="icon-theme"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
       </button>
     </div>
   </header>
 
-  <!-- Contenuto principale -->
+  <!-- Main content -->
   <main class="main" id="main-content">
 
-    <!-- PAGINA: Overview -->
+    <!-- PAGE: Overview -->
     <section class="page active" data-page="overview">
       <div class="stats-grid" id="stats-grid"></div>
       <div class="grid-2 mb-24">
         <div class="card">
-          <div class="card-title">Memorie recenti</div>
+          <div class="card-title">Recent memories</div>
           <div id="recent-memories"></div>
         </div>
         <div class="card">
-          <div class="card-title">Distribuzione categorie</div>
+          <div class="card-title">Category distribution</div>
           <div id="category-dist"></div>
         </div>
       </div>
       <div class="card">
-        <div class="card-title">Azioni rapide</div>
+        <div class="card-title">Quick actions</div>
         <div class="action-grid" id="quick-actions"></div>
       </div>
     </section>
 
-    <!-- PAGINA: Memories -->
+    <!-- PAGE: Memories -->
     <section class="page" data-page="memories">
       <div class="toolbar">
         <div class="search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="mem-search" placeholder="Cerca memorie...">
+          <input type="text" id="mem-search" placeholder="Search memories...">
         </div>
         <select class="select" id="mem-category" style="width:auto;min-width:120px">
-          <option value="">Tutte</option>
+          <option value="">All</option>
           <option value="general">general</option>
           <option value="project">project</option>
           <option value="trading">trading</option>
@@ -573,13 +573,13 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
         </label>
         <button class="btn btn-primary" id="btn-new-memory">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuova
+          New
         </button>
       </div>
       <div id="memories-list"></div>
     </section>
 
-    <!-- PAGINA: Tags & Relations -->
+    <!-- PAGE: Tags & Relations -->
     <section class="page" data-page="tags">
       <div class="grid-2">
         <div class="card">
@@ -587,53 +587,53 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
           <div class="toolbar">
             <div class="search-box" style="max-width:100%">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-              <input type="text" id="tag-search" placeholder="Cerca tag...">
+              <input type="text" id="tag-search" placeholder="Search tags...">
             </div>
           </div>
           <div class="tag-cloud" id="tag-cloud"></div>
           <div id="tag-memories" style="margin-top:16px"></div>
         </div>
         <div class="card">
-          <div class="card-title">Relazioni</div>
+          <div class="card-title">Relations</div>
           <div id="relations-list"></div>
           <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--border)">
-            <div class="card-title">Crea relazione</div>
+            <div class="card-title">Create relation</div>
             <div class="form-group">
-              <label class="form-label">ID Sorgente</label>
-              <input type="number" class="input" id="rel-source" placeholder="ID memoria sorgente">
+              <label class="form-label">Source ID</label>
+              <input type="number" class="input" id="rel-source" placeholder="Source memory ID">
             </div>
             <div class="form-group">
-              <label class="form-label">ID Target</label>
-              <input type="number" class="input" id="rel-target" placeholder="ID memoria target">
+              <label class="form-label">Target ID</label>
+              <input type="number" class="input" id="rel-target" placeholder="Target memory ID">
             </div>
             <div class="form-group">
-              <label class="form-label">Tipo relazione</label>
+              <label class="form-label">Relation type</label>
               <input type="text" class="input" id="rel-type" value="related" placeholder="related, causes, requires...">
             </div>
-            <button class="btn btn-primary" id="btn-add-relation">Crea relazione</button>
+            <button class="btn btn-primary" id="btn-add-relation">Create relation</button>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- PAGINA: Graph -->
+    <!-- PAGE: Graph -->
     <section class="page" data-page="graph">
       <div class="toolbar">
         <button class="btn btn-secondary" id="btn-graph-reload">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Ricarica
+          Reload
         </button>
         <button class="btn btn-secondary" id="btn-graph-center">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4M2 12h4m12 0h4"/></svg>
-          Centra
+          Center
         </button>
         <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted);cursor:pointer">
-          <input type="checkbox" id="graph-show-labels" checked> Etichette
+          <input type="checkbox" id="graph-show-labels" checked> Labels
         </label>
         <label style="display:flex;align-items:center;gap:4px;font-size:12px;color:var(--text-muted);cursor:pointer">
-          <input type="checkbox" id="graph-show-arrows" checked> Frecce
+          <input type="checkbox" id="graph-show-arrows" checked> Arrows
         </label>
-        <span style="font-size:12px;color:var(--text-dim);margin-left:auto" id="graph-info">Nodi: 0 — Archi: 0</span>
+        <span style="font-size:12px;color:var(--text-dim);margin-left:auto" id="graph-info">Nodes: 0 — Edges: 0</span>
       </div>
       <div class="graph-container">
         <canvas id="graph-canvas"></canvas>
@@ -643,7 +643,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
           <div class="tt-relations"></div>
         </div>
         <div class="graph-detail" id="graph-detail">
-          <button class="btn-ghost graph-detail-close" id="graph-detail-close" aria-label="Chiudi">
+          <button class="btn-ghost graph-detail-close" id="graph-detail-close" aria-label="Close">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
           </button>
           <div id="graph-detail-content"></div>
@@ -652,47 +652,47 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
       <div class="graph-legend" id="graph-legend"></div>
     </section>
 
-    <!-- PAGINA: Sessions -->
+    <!-- PAGE: Sessions -->
     <section class="page" data-page="sessions">
       <div class="toolbar">
         <button class="btn btn-primary" id="btn-new-session">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-          Nuova sessione
+          New session
         </button>
       </div>
       <div id="sessions-list"></div>
     </section>
 
-    <!-- PAGINA: Timeline -->
+    <!-- PAGE: Timeline -->
     <section class="page" data-page="timeline">
       <div class="toolbar">
         <div class="search-box">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          <input type="text" id="timeline-search" placeholder="Soggetto da cercare...">
+          <input type="text" id="timeline-search" placeholder="Subject to search...">
         </div>
-        <button class="btn btn-primary" id="btn-timeline-search">Cerca</button>
+        <button class="btn btn-primary" id="btn-timeline-search">Search</button>
       </div>
       <div id="timeline-list"></div>
     </section>
 
-    <!-- PAGINA: Maintenance -->
+    <!-- PAGE: Maintenance -->
     <section class="page" data-page="maintenance">
       <div class="action-grid mb-24">
         <button class="action-card" id="btn-decay">
           <h3 style="color:var(--accent)">Run Decay</h3>
-          <p>Ricalcola i punteggi di decadimento (Ebbinghaus)</p>
+          <p>Recalculate decay scores (Ebbinghaus)</p>
         </button>
         <button class="action-card" id="btn-compress">
-          <h3 style="color:var(--success)">Comprimi</h3>
-          <p>Unisci memorie simili (cosine similarity)</p>
+          <h3 style="color:var(--success)">Compress</h3>
+          <p>Merge similar memories (cosine similarity)</p>
         </button>
         <button class="action-card" id="btn-cleanup">
           <h3 style="color:var(--warning)">Cleanup TTL</h3>
-          <p>Rimuovi memorie scadute</p>
+          <p>Remove expired memories</p>
         </button>
         <button class="action-card" id="btn-autotune">
           <h3 style="color:var(--danger)">Auto-Tune</h3>
-          <p>Ottimizza importance basata su accesso</p>
+          <p>Optimize importance based on access</p>
         </button>
       </div>
       <div class="grid-2 mb-24">
@@ -701,7 +701,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
           <div id="scoring-stats"></div>
         </div>
         <div class="card">
-          <div class="card-title">Archivio</div>
+          <div class="card-title">Archive</div>
           <div id="archive-list"></div>
         </div>
       </div>
@@ -721,11 +721,11 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
       </div>
     </section>
 
-    <!-- PAGINA: Settings -->
+    <!-- PAGE: Settings -->
     <section class="page" data-page="settings">
       <div class="grid-2 mb-24">
         <div class="card">
-          <div class="card-title">Agenti</div>
+          <div class="card-title">Agents</div>
           <div id="agents-list"></div>
         </div>
         <div class="card">
@@ -738,7 +738,7 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
           <div class="card-title" style="margin-bottom:0">Audit Log</div>
           <div style="display:flex;gap:8px;align-items:center">
             <select class="select" id="audit-event-filter" style="width:auto;min-width:120px">
-              <option value="">Tutti gli eventi</option>
+              <option value="">All events</option>
               <option value="save">save</option>
               <option value="search">search</option>
               <option value="delete">delete</option>
@@ -746,13 +746,13 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
               <option value="decay">decay</option>
               <option value="compress">compress</option>
             </select>
-            <button class="btn btn-sm btn-secondary" id="btn-audit-refresh">Aggiorna</button>
+            <button class="btn btn-sm btn-secondary" id="btn-audit-refresh">Refresh</button>
           </div>
         </div>
         <div class="table-wrap" id="audit-table"></div>
       </div>
       <div class="card">
-        <div class="card-title">Metriche Prometheus</div>
+        <div class="card-title">Prometheus Metrics</div>
         <pre id="metrics-display" style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);white-space:pre-wrap;padding:12px;background:var(--bg-tertiary);border-radius:var(--radius);overflow-x:auto"></pre>
       </div>
     </section>
@@ -760,22 +760,22 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
   </main>
 </div>
 
-<!-- Modal Crea/Modifica Memoria -->
+<!-- Modal Create/Edit Memory -->
 <div class="modal-overlay" id="modal-memory">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title" id="modal-memory-title">Nuova memoria</span>
-      <button class="btn-ghost" id="modal-memory-close" aria-label="Chiudi">
+      <span class="modal-title" id="modal-memory-title">New memory</span>
+      <button class="btn-ghost" id="modal-memory-close" aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="form-group">
-      <label class="form-label">Contenuto</label>
-      <textarea class="textarea" id="modal-mem-content" rows="4" placeholder="Contenuto della memoria..."></textarea>
+      <label class="form-label">Content</label>
+      <textarea class="textarea" id="modal-mem-content" rows="4" placeholder="Memory content..."></textarea>
     </div>
     <div class="grid-2">
       <div class="form-group">
-        <label class="form-label">Categoria</label>
+        <label class="form-label">Category</label>
         <select class="select" id="modal-mem-category">
           <option value="general">general</option>
           <option value="project">project</option>
@@ -788,51 +788,51 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label">Importanza (1=auto)</label>
+        <label class="form-label">Importance (1=auto)</label>
         <select class="select" id="modal-mem-importance">
           <option value="1">1 — Auto</option>
-          <option value="2">2 — Bassa</option>
-          <option value="3">3 — Media</option>
-          <option value="4">4 — Alta</option>
-          <option value="5">5 — Critica</option>
+          <option value="2">2 — Low</option>
+          <option value="3">3 — Medium</option>
+          <option value="4">4 — High</option>
+          <option value="5">5 — Critical</option>
         </select>
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">TTL (ore, opzionale)</label>
-      <input type="number" class="input" id="modal-mem-ttl" placeholder="Lascia vuoto per nessuna scadenza" min="1" max="8760">
+      <label class="form-label">TTL (hours, optional)</label>
+      <input type="number" class="input" id="modal-mem-ttl" placeholder="Leave empty for no expiration" min="1" max="8760">
     </div>
     <div class="form-group">
-      <label class="form-label">Tags (separati da virgola)</label>
+      <label class="form-label">Tags (comma separated)</label>
       <input type="text" class="input" id="modal-mem-tags" placeholder="tag1, tag2, tag3">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="modal-mem-cancel">Annulla</button>
-      <button class="btn btn-primary" id="modal-mem-save">Salva</button>
+      <button class="btn btn-secondary" id="modal-mem-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-mem-save">Save</button>
     </div>
   </div>
 </div>
 
-<!-- Modal Crea Sessione -->
+<!-- Modal Create Session -->
 <div class="modal-overlay" id="modal-session">
   <div class="modal">
     <div class="modal-header">
-      <span class="modal-title">Nuova sessione</span>
-      <button class="btn-ghost" id="modal-session-close" aria-label="Chiudi">
+      <span class="modal-title">New session</span>
+      <button class="btn-ghost" id="modal-session-close" aria-label="Close">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
     </div>
     <div class="form-group">
       <label class="form-label">Session ID</label>
-      <input type="text" class="input" id="modal-sess-id" placeholder="es. session-2026-02-25">
+      <input type="text" class="input" id="modal-sess-id" placeholder="e.g. session-2026-02-25">
     </div>
     <div class="form-group">
-      <label class="form-label">Titolo (opzionale)</label>
-      <input type="text" class="input" id="modal-sess-title" placeholder="Titolo della sessione">
+      <label class="form-label">Title (optional)</label>
+      <input type="text" class="input" id="modal-sess-title" placeholder="Session title">
     </div>
     <div class="modal-footer">
-      <button class="btn btn-secondary" id="modal-sess-cancel">Annulla</button>
-      <button class="btn btn-primary" id="modal-sess-save">Crea</button>
+      <button class="btn btn-secondary" id="modal-sess-cancel">Cancel</button>
+      <button class="btn btn-primary" id="modal-sess-save">Create</button>
     </div>
   </div>
 </div>
@@ -843,10 +843,10 @@ button:focus:not(:focus-visible), a:focus:not(:focus-visible) { outline: none; }
 <script>
 /* ═══════════════════════════════════════════════════════════════════════
    Kore Dashboard — Vanilla JS Application
-   Zero dipendenze, CSP-compliant, accessibile
+   Zero dependencies, CSP-compliant, accessible
    ═══════════════════════════════════════════════════════════════════════ */
 
-/* ── Stato applicazione ────────────────────────────────────────────── */
+/* ── Application state ─────────────────────────────────────────────── */
 const state = {
   currentPage: 'overview',
   agentId: 'default',
@@ -856,32 +856,32 @@ const state = {
   editingMemoryId: null,
 };
 
-/* ── Colori categorie ──────────────────────────────────────────────── */
+/* ── Category colors ──────────────────────────────────────────────── */
 const CAT_COLORS = {
   general: '#8b5cf6', project: '#3b82f6', trading: '#f59e0b', finance: '#10b981',
   person: '#ec4899', preference: '#06b6d4', task: '#f97316', decision: '#6366f1'
 };
 
-/* ── Pagine e navigazione ──────────────────────────────────────────── */
+/* ── Pages and navigation ──────────────────────────────────────────── */
 const PAGES = [
   { id: 'overview', label: 'Overview', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>' },
-  { id: 'memories', label: 'Memorie', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>' },
-  { id: 'tags', label: 'Tags & Relazioni', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' },
-  { id: 'graph', label: 'Grafo', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' },
-  { id: 'sessions', label: 'Sessioni', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
+  { id: 'memories', label: 'Memories', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>' },
+  { id: 'tags', label: 'Tags & Relations', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>' },
+  { id: 'graph', label: 'Graph', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' },
+  { id: 'sessions', label: 'Sessions', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' },
   { id: 'timeline', label: 'Timeline', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>' },
-  { id: 'maintenance', label: 'Manutenzione', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>' },
-  { id: 'settings', label: 'Impostazioni', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>' },
+  { id: 'maintenance', label: 'Maintenance', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>' },
+  { id: 'settings', label: 'Settings', icon: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>' },
 ];
 
-/* ── Utilità DOM sicure ────────────────────────────────────────────── */
-/* Escape HTML — previene XSS usando textContent del browser */
+/* ── Safe DOM utilities ────────────────────────────────────────────── */
+/* Escape HTML — prevents XSS using browser textContent */
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function $(sel) { return document.querySelector(sel); }
 function $$(sel) { return document.querySelectorAll(sel); }
 function truncate(s, n) { n = n || 150; return s.length > n ? s.slice(0, n) + '\u2026' : s; }
 
-/* Render sicuro: costruisce HTML con valori escaped via esc() */
+/* Safe render: builds HTML with values escaped via esc() */
 function safeRender(target, html) {
   var el = typeof target === 'string' ? $(target) : target;
   if (el) el.innerHTML = html;
@@ -890,11 +890,11 @@ function safeRender(target, html) {
 function fmtDate(d) {
   if (!d) return '\u2014';
   var dt = new Date(d);
-  return dt.toLocaleDateString('it-IT', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return dt.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 function fmtDateShort(d) {
   if (!d) return '\u2014';
-  return new Date(d).toLocaleDateString('it-IT', { day: '2-digit', month: 'short' });
+  return new Date(d).toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
 }
 function decayColor(score) {
   if (score >= 0.7) return 'var(--success)';
@@ -919,13 +919,13 @@ var api = {
       if (res.status === 204) return null;
       if (!res.ok) {
         return res.json().catch(function() { return { detail: res.statusText }; }).then(function(err) {
-          throw new Error(err.detail || err.error || 'Errore API');
+          throw new Error(err.detail || err.error || 'API Error');
         });
       }
       var ct = res.headers.get('content-type') || '';
       return ct.indexOf('json') >= 0 ? res.json() : res.text();
     }).catch(function(e) {
-      if (e.message === 'Failed to fetch') throw new Error('Server non raggiungibile');
+      if (e.message === 'Failed to fetch') throw new Error('Server unreachable');
       throw e;
     });
   },
@@ -956,7 +956,7 @@ function applyTheme() {
   }
 }
 
-/* ── Navigazione ───────────────────────────────────────────────────── */
+/* ── Navigation ────────────────────────────────────────────────────── */
 function initNav() {
   var nav = $('#sidebar-nav');
   var html = '';
@@ -993,7 +993,7 @@ function loadPageData(pageId) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Overview
+   PAGE: Overview
    ═══════════════════════════════════════════════════════════════════════ */
 function loadOverview() {
   Promise.all([
@@ -1012,19 +1012,19 @@ function loadOverview() {
     var totalMem = searchRes.total || 0;
     var agentCount = agents ? (agents.total || (agents.agents || agents).length) : 0;
     var avgImp = scoring ? (scoring.avg_importance || 0).toFixed(1) : '\u2014';
-    var semStatus = state.semanticEnabled ? 'Attivo' : 'Off';
+    var semStatus = state.semanticEnabled ? 'Active' : 'Off';
     var archivedCount = arch.total || 0;
 
     safeRender('#stats-grid',
-      '<div class="stat-card"><div class="stat-label">Memorie totali</div><div class="stat-value accent">' + totalMem + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Agenti</div><div class="stat-value">' + agentCount + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Archiviate</div><div class="stat-value">' + archivedCount + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Importanza media</div><div class="stat-value warning">' + esc(avgImp) + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Ricerca semantica</div><div class="stat-value ' + (state.semanticEnabled ? 'success' : '') + '">' + semStatus + '</div></div>' +
-      '<div class="stat-card"><div class="stat-label">Versione</div><div class="stat-value" style="font-size:20px">' + esc(state.version) + '</div></div>'
+      '<div class="stat-card"><div class="stat-label">Total memories</div><div class="stat-value accent">' + totalMem + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Agents</div><div class="stat-value">' + agentCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Archived</div><div class="stat-value">' + archivedCount + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Avg importance</div><div class="stat-value warning">' + esc(avgImp) + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Semantic search</div><div class="stat-value ' + (state.semanticEnabled ? 'success' : '') + '">' + semStatus + '</div></div>' +
+      '<div class="stat-card"><div class="stat-label">Version</div><div class="stat-value" style="font-size:20px">' + esc(state.version) + '</div></div>'
     );
 
-    /* Memorie recenti */
+    /* Recent memories */
     var recent = (searchRes.results || []).slice(0, 6);
     if (recent.length) {
       var rhtml = '';
@@ -1036,10 +1036,10 @@ function loadOverview() {
       });
       safeRender('#recent-memories', rhtml);
     } else {
-      safeRender('#recent-memories', '<div class="empty-state"><p>Nessuna memoria trovata</p></div>');
+      safeRender('#recent-memories', '<div class="empty-state"><p>No memories found</p></div>');
     }
 
-    /* Distribuzione categorie */
+    /* Category distribution */
     var cats = {};
     (searchRes.results || []).forEach(function(m) { cats[m.category] = (cats[m.category] || 0) + 1; });
     var maxCat = Math.max.apply(null, Object.values(cats).concat([1]));
@@ -1055,27 +1055,27 @@ function loadOverview() {
       });
       safeRender('#category-dist', chtml);
     } else {
-      safeRender('#category-dist', '<div class="empty-state"><p>Nessun dato</p></div>');
+      safeRender('#category-dist', '<div class="empty-state"><p>No data</p></div>');
     }
 
-    /* Azioni rapide */
+    /* Quick actions */
     safeRender('#quick-actions',
-      '<button class="action-card" data-action="decay"><h3 style="color:var(--accent)">Run Decay</h3><p>Ricalcola punteggi decadimento</p></button>' +
-      '<button class="action-card" data-action="compress"><h3 style="color:var(--success)">Comprimi</h3><p>Unisci memorie simili</p></button>' +
-      '<button class="action-card" data-action="cleanup"><h3 style="color:var(--warning)">Cleanup TTL</h3><p>Rimuovi memorie scadute</p></button>' +
-      '<button class="action-card" data-action="autotune"><h3 style="color:var(--danger)">Auto-Tune</h3><p>Ottimizza importanza</p></button>'
+      '<button class="action-card" data-action="decay"><h3 style="color:var(--accent)">Run Decay</h3><p>Recalculate decay scores</p></button>' +
+      '<button class="action-card" data-action="compress"><h3 style="color:var(--success)">Compress</h3><p>Merge similar memories</p></button>' +
+      '<button class="action-card" data-action="cleanup"><h3 style="color:var(--warning)">Cleanup TTL</h3><p>Remove expired memories</p></button>' +
+      '<button class="action-card" data-action="autotune"><h3 style="color:var(--danger)">Auto-Tune</h3><p>Optimize importance</p></button>'
     );
     $('#quick-actions').querySelectorAll('[data-action]').forEach(function(btn) {
       btn.addEventListener('click', function() { runMaintenanceAction(btn.dataset.action); });
     });
 
   }).catch(function(e) {
-    toast('Errore caricamento overview: ' + e.message, 'error');
+    toast('Error loading overview: ' + e.message, 'error');
   });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Memories
+   PAGE: Memories
    ═══════════════════════════════════════════════════════════════════════ */
 var memSearchTimeout = null;
 
@@ -1092,7 +1092,7 @@ function loadMemories(query) {
 
   api.get(url).then(function(data) {
     if (!data.results || !data.results.length) {
-      safeRender(list, '<div class="empty-state"><p>Nessuna memoria trovata. Prova un\'altra ricerca.</p></div>');
+      safeRender(list, '<div class="empty-state"><p>No memories found. Try another search.</p></div>');
       return;
     }
 
@@ -1103,13 +1103,13 @@ function loadMemories(query) {
         '<span class="badge badge-' + esc(m.category) + '">' + esc(m.category) + '</span>' +
         '<span style="font-size:11px;color:var(--text-dim)">#' + m.id + '</span></div>' +
         '<div class="memory-card-actions">' +
-        '<button class="btn-ghost btn-sm" title="Modifica" data-edit="' + m.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
-        '<button class="btn-ghost btn-sm" title="Archivia" data-archive="' + m.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>' +
-        '<button class="btn-ghost btn-sm" title="Elimina" data-delete="' + m.id + '" style="color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
+        '<button class="btn-ghost btn-sm" title="Edit" data-edit="' + m.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>' +
+        '<button class="btn-ghost btn-sm" title="Archive" data-archive="' + m.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/></svg></button>' +
+        '<button class="btn-ghost btn-sm" title="Delete" data-delete="' + m.id + '" style="color:var(--danger)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>' +
         '</div></div>' +
         '<div class="memory-card-content">' + esc(m.content) + '</div>' +
         '<div class="memory-card-footer">' +
-        '<div class="importance" title="Importanza: ' + m.importance + '/5">' + importanceDots(m.importance) + '</div>' +
+        '<div class="importance" title="Importance: ' + m.importance + '/5">' + importanceDots(m.importance) + '</div>' +
         '<div style="display:flex;align-items:center;gap:4px" title="Decay: ' + (m.decay_score*100).toFixed(0) + '%">' +
         '<div class="decay-bar"><div class="decay-bar-fill" style="width:' + (m.decay_score*100).toFixed(0) + '%;background:' + decayColor(m.decay_score) + '"></div></div>' +
         '<span style="font-size:10px;color:var(--text-dim)">' + (m.decay_score*100).toFixed(0) + '%</span></div>' +
@@ -1125,21 +1125,21 @@ function loadMemories(query) {
     list.querySelectorAll('[data-archive]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         api.post('/memories/' + btn.dataset.archive + '/archive').then(function() {
-          toast('Memoria archiviata', 'success'); loadMemories();
+          toast('Memory archived', 'success'); loadMemories();
         }).catch(function(e) { toast(e.message, 'error'); });
       });
     });
     list.querySelectorAll('[data-delete]').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        if (!confirm('Eliminare questa memoria?')) return;
+        if (!confirm('Delete this memory?')) return;
         api.del('/memories/' + btn.dataset.delete).then(function() {
-          toast('Memoria eliminata', 'success'); loadMemories();
+          toast('Memory deleted', 'success'); loadMemories();
         }).catch(function(e) { toast(e.message, 'error'); });
       });
     });
 
   }).catch(function(e) {
-    safeRender(list, '<div class="empty-state"><p>Errore: ' + esc(e.message) + '</p></div>');
+    safeRender(list, '<div class="empty-state"><p>Error: ' + esc(e.message) + '</p></div>');
   });
 }
 
@@ -1147,7 +1147,7 @@ function openEditMemory(id) {
   var card = document.querySelector('.memory-card[data-id="' + id + '"]');
   if (!card) return;
   state.editingMemoryId = id;
-  $('#modal-memory-title').textContent = 'Modifica memoria #' + id;
+  $('#modal-memory-title').textContent = 'Edit memory #' + id;
   $('#modal-mem-content').value = card.querySelector('.memory-card-content').textContent;
   var catEl = card.querySelector('.badge');
   if (catEl) $('#modal-mem-category').value = catEl.textContent.trim();
@@ -1158,7 +1158,7 @@ function openEditMemory(id) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Tags & Relations
+   PAGE: Tags & Relations
    ═══════════════════════════════════════════════════════════════════════ */
 function loadTags() {
   api.get('/search?q=*&limit=20&semantic=false').then(function(data) {
@@ -1179,13 +1179,13 @@ function loadTags() {
       if (tags.length) {
         var html = '';
         tags.forEach(function(entry) {
-          html += '<span class="badge badge-tag" data-tag="' + esc(entry[0]) + '" title="' + entry[1].count + ' memorie">' + esc(entry[0]) + ' (' + entry[1].count + ')</span>';
+          html += '<span class="badge badge-tag" data-tag="' + esc(entry[0]) + '" title="' + entry[1].count + ' memories">' + esc(entry[0]) + ' (' + entry[1].count + ')</span>';
         });
         safeRender(cloud, html);
         cloud.querySelectorAll('[data-tag]').forEach(function(el) {
           el.addEventListener('click', function() {
             api.get('/tags/' + encodeURIComponent(el.dataset.tag) + '/memories').then(function(res) {
-              var h = '<div class="card-title" style="margin-top:8px">Memorie con tag "' + esc(el.dataset.tag) + '"</div>';
+              var h = '<div class="card-title" style="margin-top:8px">Memories with tag "' + esc(el.dataset.tag) + '"</div>';
               (res.results || []).forEach(function(m) {
                 h += '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><span style="font-size:12px;color:var(--text-dim)">#' + m.id + '</span> <span style="font-size:13px">' + esc(truncate(m.content, 100)) + '</span></div>';
               });
@@ -1194,14 +1194,14 @@ function loadTags() {
           });
         });
       } else {
-        safeRender(cloud, '<div class="empty-state"><p>Nessun tag trovato</p></div>');
+        safeRender(cloud, '<div class="empty-state"><p>No tags found</p></div>');
       }
 
-      /* Relazioni */
+      /* Relations */
       loadRelations(data.results || []);
     });
   }).catch(function(e) {
-    toast('Errore caricamento tags: ' + e.message, 'error');
+    toast('Error loading tags: ' + e.message, 'error');
   });
 }
 
@@ -1226,14 +1226,14 @@ function loadRelations(memories) {
       });
       safeRender('#relations-list', html);
     } else {
-      safeRender('#relations-list', '<div class="empty-state" style="padding:24px"><p>Nessuna relazione trovata</p></div>');
+      safeRender('#relations-list', '<div class="empty-state" style="padding:24px"><p>No relations found</p></div>');
     }
   });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Graph (Force-directed interattivo)
-   Drag nodi, zoom/pan, hover tooltip, click dettaglio, frecce direzionali
+   PAGE: Graph (Interactive force-directed)
+   Node drag, zoom/pan, hover tooltip, click detail, directional arrows
    ═══════════════════════════════════════════════════════════════════════ */
 var graphNodes = [], graphEdges = [], graphAnim = null;
 var graphState = {
@@ -1244,7 +1244,7 @@ var graphState = {
   settled: false, iteration: 0
 };
 
-/* Coordinate mouse → coordinate grafo (applica zoom/pan) */
+/* Mouse coordinates → graph coordinates (applies zoom/pan) */
 function screenToGraph(canvas, mx, my) {
   var rect = canvas.getBoundingClientRect();
   var sx = (mx - rect.left);
@@ -1255,7 +1255,7 @@ function screenToGraph(canvas, mx, my) {
   };
 }
 
-/* Trova nodo sotto il cursore */
+/* Find node under cursor */
 function hitTestNode(gx, gy) {
   for (var i = graphNodes.length - 1; i >= 0; i--) {
     var n = graphNodes[i];
@@ -1276,14 +1276,14 @@ function loadGraph() {
   ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
   var w = canvas.offsetWidth, h = canvas.offsetHeight;
 
-  /* Reset stato */
+  /* Reset state */
   graphState.zoom = 1; graphState.panX = 0; graphState.panY = 0;
   graphState.dragNode = null; graphState.hoveredNode = null;
   graphState.selectedNode = null; graphState.settled = false; graphState.iteration = 0;
 
   api.get('/search?q=*&limit=20&semantic=false').then(function(data) {
     var memories = data.results || [];
-    /* Distribuisci nodi in cerchio per layout iniziale migliore */
+    /* Distribute nodes in a circle for better initial layout */
     graphNodes = memories.map(function(m, i) {
       var angle = (2 * Math.PI * i) / memories.length;
       var radius = Math.min(w, h) * 0.3;
@@ -1309,9 +1309,9 @@ function loadGraph() {
     });
 
     return Promise.all(promises).then(function() {
-      $('#graph-info').textContent = 'Nodi: ' + graphNodes.length + ' \u2014 Archi: ' + graphEdges.length;
+      $('#graph-info').textContent = 'Nodes: ' + graphNodes.length + ' \u2014 Edges: ' + graphEdges.length;
 
-      /* Legenda categorie presenti */
+      /* Legend of present categories */
       var catsUsed = {};
       graphNodes.forEach(function(n) { catsUsed[n.category] = true; });
       var legendHtml = '';
@@ -1325,30 +1325,30 @@ function loadGraph() {
       initGraphInteractions(canvas);
     });
   }).catch(function(e) {
-    toast('Errore caricamento grafo: ' + e.message, 'error');
+    toast('Error loading graph: ' + e.message, 'error');
   });
 }
 
 function initGraphInteractions(canvas) {
-  /* Evita doppi listener: rimuovi e ricrea */
+  /* Avoid double listeners: remove and recreate */
   var newCanvas = canvas.cloneNode(true);
   canvas.parentNode.replaceChild(newCanvas, canvas);
   canvas = newCanvas;
-  /* Aggiorna riferimento globale */
+  /* Update global reference */
   var ctx = canvas.getContext('2d');
   ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
 
-  /* Riavvia animazione con nuovo canvas */
+  /* Restart animation with new canvas */
   if (graphAnim) cancelAnimationFrame(graphAnim);
   animateGraph(ctx, canvas);
 
   var tooltip = $('#graph-tooltip');
 
-  /* ── Mouse move: hover + drag ─────────────────────────── */
+  /* ── Mouse move: hover + drag ──────────────────────────── */
   canvas.addEventListener('mousemove', function(e) {
     var g = screenToGraph(canvas, e.clientX, e.clientY);
 
-    /* Drag di un nodo */
+    /* Node drag */
     if (graphState.dragNode) {
       graphState.dragNode.x = g.x;
       graphState.dragNode.y = g.y;
@@ -1357,7 +1357,7 @@ function initGraphInteractions(canvas) {
       return;
     }
 
-    /* Pan della vista */
+    /* View pan */
     if (graphState.isPanning && graphState.lastMouse) {
       var rect = canvas.getBoundingClientRect();
       var dx = (e.clientX - graphState.lastMouse.x) / graphState.zoom;
@@ -1374,7 +1374,7 @@ function initGraphInteractions(canvas) {
     canvas.classList.toggle('hovering', !!node);
 
     if (node) {
-      /* Mostra tooltip */
+      /* Show tooltip */
       var rect = canvas.getBoundingClientRect();
       var sx = (node.x - canvas.offsetWidth/2 + graphState.panX) * graphState.zoom + canvas.offsetWidth/2;
       var sy = (node.y - canvas.offsetHeight/2 + graphState.panY) * graphState.zoom + canvas.offsetHeight/2;
@@ -1383,12 +1383,12 @@ function initGraphInteractions(canvas) {
       catBadge.textContent = node.category;
       catBadge.className = 'tt-cat badge badge-' + node.category;
       tooltip.querySelector('.tt-content').textContent = truncate(node.fullContent, 120);
-      /* Relazioni del nodo */
+      /* Node relations */
       var rels = graphEdges.filter(function(ed) { return ed.source === node.id || ed.target === node.id; });
       if (rels.length) {
-        tooltip.querySelector('.tt-relations').textContent = rels.length + ' relazion' + (rels.length === 1 ? 'e' : 'i');
+        tooltip.querySelector('.tt-relations').textContent = rels.length + ' relation' + (rels.length === 1 ? '' : 's');
       } else {
-        tooltip.querySelector('.tt-relations').textContent = 'Nessuna relazione';
+        tooltip.querySelector('.tt-relations').textContent = 'No relations';
       }
       tooltip.style.left = Math.min(sx + 15, canvas.offsetWidth - 310) + 'px';
       tooltip.style.top = Math.min(sy - 10, canvas.offsetHeight - 80) + 'px';
@@ -1398,7 +1398,7 @@ function initGraphInteractions(canvas) {
     }
   });
 
-  /* ── Mouse down: inizio drag nodo o pan ────────────── */
+  /* ── Mouse down: start node drag or pan ─────────────── */
   canvas.addEventListener('mousedown', function(e) {
     var g = screenToGraph(canvas, e.clientX, e.clientY);
     var node = hitTestNode(g.x, g.y);
@@ -1412,11 +1412,11 @@ function initGraphInteractions(canvas) {
     }
   });
 
-  /* ── Mouse up: fine drag/pan ───────────────────────── */
+  /* ── Mouse up: end drag/pan ────────────────────────── */
   canvas.addEventListener('mouseup', function(e) {
     canvas.classList.remove('dragging');
     if (graphState.dragNode) {
-      /* Dopo il drag, riavvia brevemente la simulazione per assestare */
+      /* After drag, briefly restart simulation to settle */
       graphState.iteration = Math.min(graphState.iteration, 120);
     }
     graphState.dragNode = null;
@@ -1433,7 +1433,7 @@ function initGraphInteractions(canvas) {
     tooltip.classList.remove('visible');
   });
 
-  /* ── Click: seleziona nodo e mostra dettaglio ──────── */
+  /* ── Click: select node and show detail ─────────────── */
   canvas.addEventListener('click', function(e) {
     var g = screenToGraph(canvas, e.clientX, e.clientY);
     var node = hitTestNode(g.x, g.y);
@@ -1446,7 +1446,7 @@ function initGraphInteractions(canvas) {
     }
   });
 
-  /* ── Wheel: zoom ───────────────────────────────────── */
+  /* ── Wheel: zoom ─────────────────────────────────────── */
   canvas.addEventListener('wheel', function(e) {
     e.preventDefault();
     var delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -1456,7 +1456,7 @@ function initGraphInteractions(canvas) {
 
 function showGraphDetail(node) {
   var detail = $('#graph-detail');
-  /* Relazioni in uscita e in entrata */
+  /* Outgoing and incoming relations */
   var outgoing = graphEdges.filter(function(e) { return e.source === node.id; });
   var incoming = graphEdges.filter(function(e) { return e.target === node.id; });
 
@@ -1475,18 +1475,18 @@ function showGraphDetail(node) {
     ' <span class="badge badge-' + esc(node.category) + '">' + esc(node.category) + '</span></div>' +
     '<div style="font-size:13px;line-height:1.5;margin-bottom:12px">' + esc(node.fullContent) + '</div>' +
     '<div style="display:flex;gap:12px;margin-bottom:12px">' +
-    '<div><span style="font-size:11px;color:var(--text-dim)">Importanza</span><div class="importance">' + importanceDots(node.importance) + '</div></div>' +
+    '<div><span style="font-size:11px;color:var(--text-dim)">Importance</span><div class="importance">' + importanceDots(node.importance) + '</div></div>' +
     '<div><span style="font-size:11px;color:var(--text-dim)">Decay</span><div style="display:flex;align-items:center;gap:4px;margin-top:2px"><div class="decay-bar" style="width:50px"><div class="decay-bar-fill" style="width:' + (node.decay_score*100).toFixed(0) + '%;background:' + decayColor(node.decay_score) + '"></div></div><span style="font-size:10px;color:var(--text-dim)">' + (node.decay_score*100).toFixed(0) + '%</span></div></div></div>' +
     '<div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">' + fmtDate(node.created_at) + '</div>' +
-    (relsHtml ? '<div class="card-title" style="font-size:11px;margin-bottom:4px">Relazioni (' + (outgoing.length + incoming.length) + ')</div>' + relsHtml : '<div style="font-size:12px;color:var(--text-dim)">Nessuna relazione</div>') +
+    (relsHtml ? '<div class="card-title" style="font-size:11px;margin-bottom:4px">Relations (' + (outgoing.length + incoming.length) + ')</div>' + relsHtml : '<div style="font-size:12px;color:var(--text-dim)">No relations</div>') +
     '<div style="margin-top:12px;display:flex;gap:6px">' +
-    '<button class="btn btn-sm btn-primary" data-graph-edit="' + node.id + '">Modifica</button>' +
-    '<button class="btn btn-sm btn-secondary" data-graph-goto="' + node.id + '">Vai a Memorie</button></div>'
+    '<button class="btn btn-sm btn-primary" data-graph-edit="' + node.id + '">Edit</button>' +
+    '<button class="btn btn-sm btn-secondary" data-graph-goto="' + node.id + '">Go to Memories</button></div>'
   );
 
   detail.classList.add('open');
 
-  /* Bottoni nel pannello dettaglio */
+  /* Buttons in the detail panel */
   var editBtn = detail.querySelector('[data-graph-edit]');
   if (editBtn) editBtn.addEventListener('click', function() {
     detail.classList.remove('open');
@@ -1503,38 +1503,38 @@ function showGraphDetail(node) {
 function animateGraph(ctx, canvas) {
   var w = canvas.offsetWidth, h = canvas.offsetHeight;
 
-  /* Simulazione forze — cooling progressivo e stabilizzazione */
+  /* Force simulation — progressive cooling and stabilization */
   var cooling = graphState.iteration < 150 ? 1.0 : Math.max(0.0, 1.0 - (graphState.iteration - 150) / 150);
   graphState.iteration++;
 
-  /* Se la simulazione si e' stabilizzata, non calcolare forze */
+  /* If simulation has settled, do not calculate forces */
   if (cooling <= 0 && !graphState.dragNode) {
-    /* Disegna e basta — nessuna forza applicata */
+    /* Just draw — no forces applied */
   } else {
 
   graphNodes.forEach(function(n) {
     if (n === graphState.dragNode) return;
     n.vx *= 0.8; n.vy *= 0.8;
-    /* Gravita' verso il centro — forte abbastanza da vincere la repulsione */
+    /* Gravity toward center — strong enough to overcome repulsion */
     n.vx += (w/2 - n.x) * 0.005 * cooling;
     n.vy += (h/2 - n.y) * 0.005 * cooling;
   });
 
-  /* Repulsione tra nodi — forza piu' contenuta con distanza minima */
+  /* Node repulsion — more contained force with minimum distance */
   for (var i = 0; i < graphNodes.length; i++) {
     for (var j = i + 1; j < graphNodes.length; j++) {
       var a = graphNodes[i], b = graphNodes[j];
       if (a === graphState.dragNode || b === graphState.dragNode) continue;
       var dx = b.x - a.x, dy = b.y - a.y;
       var dist = Math.sqrt(dx*dx + dy*dy) || 1;
-      if (dist > 300) continue; /* Ignora nodi troppo distanti */
+      if (dist > 300) continue; /* Ignore nodes too far apart */
       var force = 400 * cooling / (dist * dist + 100);
       a.vx -= dx * force; a.vy -= dy * force;
       b.vx += dx * force; b.vy += dy * force;
     }
   }
 
-  /* Attrazione archi — spring ideale a 100px */
+  /* Edge attraction — ideal spring at 100px */
   graphEdges.forEach(function(e) {
     var a = graphNodes.find(function(n) { return n.id === e.source; });
     var b = graphNodes.find(function(n) { return n.id === e.target; });
@@ -1547,7 +1547,7 @@ function animateGraph(ctx, canvas) {
     b.vx -= dx/dist * f; b.vy -= dy/dist * f;
   });
 
-  /* Aggiorna posizioni con margine del 15% dal bordo */
+  /* Update positions with 15% margin from edge */
   var mx = w * 0.15, my = h * 0.15;
   graphNodes.forEach(function(n) {
     if (n === graphState.dragNode) return;
@@ -1557,19 +1557,19 @@ function animateGraph(ctx, canvas) {
     n.y = Math.max(my, Math.min(h - my, n.y));
   });
 
-  } /* fine blocco cooling > 0 */
+  } /* end cooling > 0 block */
 
-  /* ── Disegno ────────────────────────────────────── */
+  /* ── Draw ────────────────────────────────────────── */
   var isDark = state.theme === 'dark';
   ctx.clearRect(0, 0, w, h);
   ctx.save();
 
-  /* Applica zoom e pan */
+  /* Apply zoom and pan */
   ctx.translate(w/2, h/2);
   ctx.scale(graphState.zoom, graphState.zoom);
   ctx.translate(graphState.panX - w/2, graphState.panY - h/2);
 
-  /* Archi */
+  /* Edges */
   graphEdges.forEach(function(e) {
     var a = graphNodes.find(function(n) { return n.id === e.source; });
     var b = graphNodes.find(function(n) { return n.id === e.target; });
@@ -1588,7 +1588,7 @@ function animateGraph(ctx, canvas) {
     ctx.lineTo(b.x, b.y);
     ctx.stroke();
 
-    /* Freccia direzionale */
+    /* Directional arrow */
     if (graphState.showArrows) {
       var dx = b.x - a.x, dy = b.y - a.y;
       var dist = Math.sqrt(dx*dx + dy*dy) || 1;
@@ -1606,7 +1606,7 @@ function animateGraph(ctx, canvas) {
       ctx.fill();
     }
 
-    /* Label relazione al centro dell'arco */
+    /* Relation label at arc center */
     if (graphState.showLabels && (isHighlighted || isSelected)) {
       var mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
       ctx.fillStyle = isDark ? 'rgba(139,92,246,0.9)' : 'rgba(124,58,237,0.8)';
@@ -1616,7 +1616,7 @@ function animateGraph(ctx, canvas) {
     }
   });
 
-  /* Nodi */
+  /* Nodes */
   graphNodes.forEach(function(n) {
     var r = 6 + n.importance * 2.5;
     var isHovered = graphState.hoveredNode === n;
@@ -1632,7 +1632,7 @@ function animateGraph(ctx, canvas) {
     var baseColor = CAT_COLORS[n.category] || '#8b5cf6';
     var dimmed = graphState.hoveredNode && !isHovered && !isConnected;
 
-    /* Glow per nodo selezionato/hover */
+    /* Glow for selected/hovered node */
     if (isSelected || isHovered) {
       ctx.beginPath();
       ctx.arc(n.x, n.y, r + 6, 0, Math.PI * 2);
@@ -1643,20 +1643,20 @@ function animateGraph(ctx, canvas) {
       ctx.fill();
     }
 
-    /* Cerchio nodo */
+    /* Node circle */
     ctx.beginPath();
     ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
     ctx.fillStyle = dimmed ? (isDark ? '#3f3f46' : '#d4d4d8') : baseColor;
     ctx.fill();
 
-    /* Bordo per nodo selezionato */
+    /* Border for selected node */
     if (isSelected) {
       ctx.strokeStyle = '#fff';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
 
-    /* Label sotto il nodo */
+    /* Label below node */
     if (graphState.showLabels && !dimmed) {
       ctx.fillStyle = isHovered || isSelected
         ? (isDark ? '#fafafa' : '#18181b')
@@ -1672,7 +1672,7 @@ function animateGraph(ctx, canvas) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Sessions
+   PAGE: Sessions
    ═══════════════════════════════════════════════════════════════════════ */
 function loadSessions() {
   var list = $('#sessions-list');
@@ -1680,7 +1680,7 @@ function loadSessions() {
 
   api.get('/sessions?limit=50').then(function(sessions) {
     if (!sessions || !sessions.length) {
-      safeRender(list, '<div class="empty-state"><p>Nessuna sessione trovata</p></div>');
+      safeRender(list, '<div class="empty-state"><p>No sessions found</p></div>');
       return;
     }
     var html = '';
@@ -1688,11 +1688,11 @@ function loadSessions() {
       html += '<div class="session-card"><div class="session-info">' +
         '<h4>' + esc(s.title || s.id) + '</h4>' +
         '<div class="meta">' + esc(s.id) + ' \u2014 ' + fmtDate(s.created_at) +
-        (s.ended_at ? ' \u2192 ' + fmtDate(s.ended_at) : ' <span style="color:var(--success)">\u2022 attiva</span>') +
+        (s.ended_at ? ' \u2192 ' + fmtDate(s.ended_at) : ' <span style="color:var(--success)">\u2022 active</span>') +
         '</div></div><div style="display:flex;gap:6px">' +
-        (!s.ended_at ? '<button class="btn btn-sm btn-secondary" data-end-session="' + esc(s.id) + '">Termina</button>' : '') +
-        '<button class="btn btn-sm btn-secondary" data-view-session="' + esc(s.id) + '">Memorie</button>' +
-        '<button class="btn btn-sm btn-danger" data-del-session="' + esc(s.id) + '">Elimina</button>' +
+        (!s.ended_at ? '<button class="btn btn-sm btn-secondary" data-end-session="' + esc(s.id) + '">End</button>' : '') +
+        '<button class="btn btn-sm btn-secondary" data-view-session="' + esc(s.id) + '">Memories</button>' +
+        '<button class="btn btn-sm btn-danger" data-del-session="' + esc(s.id) + '">Delete</button>' +
         '</div></div>';
     });
     safeRender(list, html);
@@ -1700,15 +1700,15 @@ function loadSessions() {
     list.querySelectorAll('[data-end-session]').forEach(function(btn) {
       btn.addEventListener('click', function() {
         api.post('/sessions/' + encodeURIComponent(btn.dataset.endSession) + '/end').then(function() {
-          toast('Sessione terminata', 'success'); loadSessions();
+          toast('Session ended', 'success'); loadSessions();
         }).catch(function(e) { toast(e.message, 'error'); });
       });
     });
     list.querySelectorAll('[data-del-session]').forEach(function(btn) {
       btn.addEventListener('click', function() {
-        if (!confirm('Eliminare questa sessione?')) return;
+        if (!confirm('Delete this session?')) return;
         api.del('/sessions/' + encodeURIComponent(btn.dataset.delSession)).then(function() {
-          toast('Sessione eliminata', 'success'); loadSessions();
+          toast('Session deleted', 'success'); loadSessions();
         }).catch(function(e) { toast(e.message, 'error'); });
       });
     });
@@ -1716,8 +1716,8 @@ function loadSessions() {
       btn.addEventListener('click', function() {
         api.get('/sessions/' + encodeURIComponent(btn.dataset.viewSession) + '/memories').then(function(res) {
           var mems = res.results || [];
-          if (!mems.length) { toast('Nessuna memoria in questa sessione', 'info'); return; }
-          var h = '<div class="card" style="margin-top:16px"><div class="card-title">Memorie sessione ' + esc(btn.dataset.viewSession) + '</div>';
+          if (!mems.length) { toast('No memories in this session', 'info'); return; }
+          var h = '<div class="card" style="margin-top:16px"><div class="card-title">Session memories ' + esc(btn.dataset.viewSession) + '</div>';
           mems.forEach(function(m) {
             h += '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><span class="badge badge-' + esc(m.category) + '" style="margin-right:6px">' + esc(m.category) + '</span><span style="font-size:13px">' + esc(truncate(m.content, 120)) + '</span></div>';
           });
@@ -1727,23 +1727,23 @@ function loadSessions() {
       });
     });
   }).catch(function(e) {
-    safeRender(list, '<div class="empty-state"><p>Errore: ' + esc(e.message) + '</p></div>');
+    safeRender(list, '<div class="empty-state"><p>Error: ' + esc(e.message) + '</p></div>');
   });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Timeline
+   PAGE: Timeline
    ═══════════════════════════════════════════════════════════════════════ */
 function loadTimeline(subject) {
   if (!subject) {
-    safeRender('#timeline-list', '<div class="empty-state"><p>Inserisci un soggetto da cercare nella timeline</p></div>');
+    safeRender('#timeline-list', '<div class="empty-state"><p>Enter a subject to search in timeline</p></div>');
     return;
   }
   safeRender('#timeline-list', '<div class="loading-center"><div class="spinner"></div></div>');
 
   api.get('/timeline?subject=' + encodeURIComponent(subject) + '&limit=30').then(function(data) {
     if (!data.results || !data.results.length) {
-      safeRender('#timeline-list', '<div class="empty-state"><p>Nessun risultato trovato</p></div>');
+      safeRender('#timeline-list', '<div class="empty-state"><p>No results found</p></div>');
       return;
     }
     var html = '';
@@ -1756,23 +1756,23 @@ function loadTimeline(subject) {
     });
     safeRender('#timeline-list', html);
   }).catch(function(e) {
-    safeRender('#timeline-list', '<div class="empty-state"><p>Errore: ' + esc(e.message) + '</p></div>');
+    safeRender('#timeline-list', '<div class="empty-state"><p>Error: ' + esc(e.message) + '</p></div>');
   });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Maintenance
+   PAGE: Maintenance
    ═══════════════════════════════════════════════════════════════════════ */
 function loadMaintenance() {
   /* Scoring stats */
   api.get('/stats/scoring').then(function(stats) {
     var dist = stats.distribution || {};
     var h = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">' +
-      '<div><span style="color:var(--text-dim);font-size:12px">Totale</span><div style="font-size:20px;font-weight:600">' + stats.total + '</div></div>' +
-      '<div><span style="color:var(--text-dim);font-size:12px">Imp. media</span><div style="font-size:20px;font-weight:600">' + (stats.avg_importance || 0).toFixed(1) + '</div></div>' +
-      '<div><span style="color:var(--text-dim);font-size:12px">Mai accesso (30gg)</span><div style="font-size:20px;font-weight:600;color:var(--warning)">' + stats.never_accessed_30d + '</div></div>' +
-      '<div><span style="color:var(--text-dim);font-size:12px">Accesso frequente</span><div style="font-size:20px;font-weight:600;color:var(--success)">' + stats.frequently_accessed + '</div></div></div>' +
-      '<div class="card-title" style="margin-top:8px">Distribuzione importanza</div>';
+      '<div><span style="color:var(--text-dim);font-size:12px">Total</span><div style="font-size:20px;font-weight:600">' + stats.total + '</div></div>' +
+      '<div><span style="color:var(--text-dim);font-size:12px">Avg importance</span><div style="font-size:20px;font-weight:600">' + (stats.avg_importance || 0).toFixed(1) + '</div></div>' +
+      '<div><span style="color:var(--text-dim);font-size:12px">Never accessed (30d)</span><div style="font-size:20px;font-weight:600;color:var(--warning)">' + stats.never_accessed_30d + '</div></div>' +
+      '<div><span style="color:var(--text-dim);font-size:12px">Frequently accessed</span><div style="font-size:20px;font-weight:600;color:var(--success)">' + stats.frequently_accessed + '</div></div></div>' +
+      '<div class="card-title" style="margin-top:8px">Importance distribution</div>';
     [1,2,3,4,5].forEach(function(i) {
       var count = dist[String(i)] || 0;
       var pct = stats.total ? (count / stats.total * 100).toFixed(0) : 0;
@@ -1780,10 +1780,10 @@ function loadMaintenance() {
     });
     safeRender('#scoring-stats', h);
   }).catch(function() {
-    safeRender('#scoring-stats', '<div class="empty-state"><p>Stats non disponibili</p></div>');
+    safeRender('#scoring-stats', '<div class="empty-state"><p>Stats not available</p></div>');
   });
 
-  /* Archivio */
+  /* Archive */
   api.get('/archive?limit=20').then(function(arch) {
     var items = arch.results || [];
     if (items.length) {
@@ -1791,21 +1791,21 @@ function loadMaintenance() {
       items.forEach(function(m) {
         h += '<div style="padding:8px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center">' +
           '<div><span style="font-size:12px;color:var(--text-dim)">#' + m.id + '</span> <span style="font-size:13px">' + esc(truncate(m.content, 60)) + '</span></div>' +
-          '<button class="btn btn-sm btn-success" data-restore="' + m.id + '">Ripristina</button></div>';
+          '<button class="btn btn-sm btn-success" data-restore="' + m.id + '">Restore</button></div>';
       });
       safeRender('#archive-list', h);
       $('#archive-list').querySelectorAll('[data-restore]').forEach(function(btn) {
         btn.addEventListener('click', function() {
           api.post('/memories/' + btn.dataset.restore + '/restore').then(function() {
-            toast('Memoria ripristinata', 'success'); loadMaintenance();
+            toast('Memory restored', 'success'); loadMaintenance();
           }).catch(function(e) { toast(e.message, 'error'); });
         });
       });
     } else {
-      safeRender('#archive-list', '<div class="empty-state" style="padding:24px"><p>Nessuna memoria archiviata</p></div>');
+      safeRender('#archive-list', '<div class="empty-state" style="padding:24px"><p>No archived memories</p></div>');
     }
   }).catch(function() {
-    safeRender('#archive-list', '<div class="empty-state"><p>Errore caricamento archivio</p></div>');
+    safeRender('#archive-list', '<div class="empty-state"><p>Error loading archive</p></div>');
   });
 }
 
@@ -1813,23 +1813,23 @@ function runMaintenanceAction(action) {
   var endpoints = { decay: '/decay/run', compress: '/compress', cleanup: '/cleanup', autotune: '/auto-tune' };
   api.post(endpoints[action]).then(function(result) {
     switch (action) {
-      case 'decay': toast('Decay completato: ' + result.updated + ' memorie aggiornate', 'success'); break;
-      case 'compress': toast('Compressione: ' + result.clusters_found + ' cluster, ' + result.memories_merged + ' unite', 'success'); break;
-      case 'cleanup': toast('Cleanup: ' + result.removed + ' memorie scadute rimosse', 'success'); break;
-      case 'autotune': toast('Auto-tune: ' + result.boosted + ' potenziate, ' + result.reduced + ' ridotte', 'success'); break;
+      case 'decay': toast('Decay complete: ' + result.updated + ' memories updated', 'success'); break;
+      case 'compress': toast('Compression: ' + result.clusters_found + ' clusters, ' + result.memories_merged + ' merged', 'success'); break;
+      case 'cleanup': toast('Cleanup: ' + result.removed + ' expired memories removed', 'success'); break;
+      case 'autotune': toast('Auto-tune: ' + result.boosted + ' boosted, ' + result.reduced + ' reduced', 'success'); break;
     }
-  }).catch(function(e) { toast('Errore: ' + e.message, 'error'); });
+  }).catch(function(e) { toast('Error: ' + e.message, 'error'); });
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
-   PAGINA: Settings
+   PAGE: Settings
    ═══════════════════════════════════════════════════════════════════════ */
 function loadSettings() {
-  /* Agenti */
+  /* Agents */
   api.get('/agents').then(function(res) {
     var agents = res.agents || res;
     if (agents && agents.length) {
-      var h = '<table><thead><tr><th>Agent ID</th><th>Memorie</th><th>Ultima attivit\u00e0</th></tr></thead><tbody>';
+      var h = '<table><thead><tr><th>Agent ID</th><th>Memories</th><th>Last activity</th></tr></thead><tbody>';
       agents.forEach(function(a) {
         h += '<tr><td style="font-family:var(--font-mono);color:var(--accent)">' + esc(a.agent_id) + '</td>' +
           '<td>' + a.memory_count + '</td><td style="color:var(--text-dim)">' + fmtDate(a.last_active || a.last_activity) + '</td></tr>';
@@ -1837,31 +1837,31 @@ function loadSettings() {
       h += '</tbody></table>';
       safeRender('#agents-list', h);
     } else {
-      safeRender('#agents-list', '<div class="empty-state"><p>Nessun agente trovato</p></div>');
+      safeRender('#agents-list', '<div class="empty-state"><p>No agents found</p></div>');
     }
   }).catch(function() {
-    safeRender('#agents-list', '<div class="empty-state"><p>Errore</p></div>');
+    safeRender('#agents-list', '<div class="empty-state"><p>Error</p></div>');
   });
 
   /* Server info */
   api.get('/health').then(function(health) {
     safeRender('#server-info',
       '<div style="display:grid;gap:8px">' +
-      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Stato</span><span style="color:var(--success);font-weight:500">' + esc(health.status) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Versione</span><span>' + esc(health.version) + '</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Ricerca semantica</span><span style="color:' + (health.semantic_search ? 'var(--success)' : 'var(--text-dim)') + '">' + (health.semantic_search ? 'Attiva' : 'Disattiva') + '</span></div></div>'
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Status</span><span style="color:var(--success);font-weight:500">' + esc(health.status) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Version</span><span>' + esc(health.version) + '</span></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-dim)">Semantic search</span><span style="color:' + (health.semantic_search ? 'var(--success)' : 'var(--text-dim)') + '">' + (health.semantic_search ? 'Active' : 'Disabled') + '</span></div></div>'
     );
   }).catch(function() {
-    safeRender('#server-info', '<div class="empty-state"><p>Server non raggiungibile</p></div>');
+    safeRender('#server-info', '<div class="empty-state"><p>Server unreachable</p></div>');
   });
 
   loadAuditLog();
 
-  /* Metriche */
+  /* Metrics */
   api.get('/metrics').then(function(metrics) {
     $('#metrics-display').textContent = typeof metrics === 'string' ? metrics : JSON.stringify(metrics, null, 2);
   }).catch(function() {
-    $('#metrics-display').textContent = 'Metriche non disponibili';
+    $('#metrics-display').textContent = 'Metrics not available';
   });
 }
 
@@ -1873,7 +1873,7 @@ function loadAuditLog() {
   api.get(url).then(function(data) {
     var events = data.events || [];
     if (events.length) {
-      var h = '<table><thead><tr><th>Evento</th><th>Memoria</th><th>Data</th><th>Dati</th></tr></thead><tbody>';
+      var h = '<table><thead><tr><th>Event</th><th>Memory</th><th>Date</th><th>Data</th></tr></thead><tbody>';
       events.slice(0, 50).forEach(function(e) {
         h += '<tr class="audit-row"><td><span class="audit-event">' + esc(e.event) + '</span></td>' +
           '<td>' + (e.memory_id ? '#' + e.memory_id : '\u2014') + '</td>' +
@@ -1883,7 +1883,7 @@ function loadAuditLog() {
       h += '</tbody></table>';
       safeRender('#audit-table', h);
     } else {
-      safeRender('#audit-table', '<div class="empty-state" style="padding:24px"><p>Nessun evento audit</p></div>');
+      safeRender('#audit-table', '<div class="empty-state" style="padding:24px"><p>No audit events</p></div>');
     }
   }).catch(function() {
     safeRender('#audit-table', '<div class="empty-state"><p>Audit log non disponibile (KORE_AUDIT_LOG=1)</p></div>');
@@ -1916,7 +1916,7 @@ function initEventHandlers() {
 
   $('#btn-new-memory').addEventListener('click', function() {
     state.editingMemoryId = null;
-    $('#modal-memory-title').textContent = 'Nuova memoria';
+    $('#modal-memory-title').textContent = 'New memory';
     $('#modal-mem-content').value = '';
     $('#modal-mem-category').value = 'general';
     $('#modal-mem-importance').value = '1';
@@ -1930,7 +1930,7 @@ function initEventHandlers() {
 
   $('#modal-mem-save').addEventListener('click', function() {
     var content = $('#modal-mem-content').value.trim();
-    if (!content) { toast('Il contenuto \u00e8 obbligatorio', 'error'); return; }
+    if (!content) { toast('Content is required', 'error'); return; }
     var category = $('#modal-mem-category').value;
     var importance = parseInt($('#modal-mem-importance').value);
     var ttl = $('#modal-mem-ttl').value ? parseInt($('#modal-mem-ttl').value) : null;
@@ -1938,7 +1938,7 @@ function initEventHandlers() {
 
     if (state.editingMemoryId) {
       api.put('/memories/' + state.editingMemoryId, { content: content, category: category, importance: importance }).then(function() {
-        toast('Memoria aggiornata', 'success');
+        toast('Memory updated', 'success');
         $('#modal-memory').classList.remove('open');
         loadMemories();
       }).catch(function(e) { toast(e.message, 'error'); });
@@ -1950,7 +1950,7 @@ function initEventHandlers() {
           return api.post('/memories/' + res.id + '/tags', { tags: tags });
         }
       }).then(function() {
-        toast('Memoria salvata', 'success');
+        toast('Memory saved', 'success');
         $('#modal-memory').classList.remove('open');
         loadMemories();
       }).catch(function(e) { toast(e.message, 'error'); });
@@ -1966,9 +1966,9 @@ function initEventHandlers() {
   $('#modal-sess-cancel').addEventListener('click', function() { $('#modal-session').classList.remove('open'); });
   $('#modal-sess-save').addEventListener('click', function() {
     var id = $('#modal-sess-id').value.trim();
-    if (!id) { toast('Session ID obbligatorio', 'error'); return; }
+    if (!id) { toast('Session ID is required', 'error'); return; }
     api.post('/sessions', { session_id: id, title: $('#modal-sess-title').value.trim() || null }).then(function() {
-      toast('Sessione creata', 'success');
+      toast('Session created', 'success');
       $('#modal-session').classList.remove('open');
       loadSessions();
     }).catch(function(e) { toast(e.message, 'error'); });
@@ -1989,7 +1989,7 @@ function initEventHandlers() {
       var a = document.createElement('a');
       a.href = url; a.download = 'kore-export-' + state.agentId + '-' + new Date().toISOString().slice(0,10) + '.json';
       a.click(); URL.revokeObjectURL(url);
-      toast('Export completato: ' + data.total + ' memorie', 'success');
+      toast('Export complete: ' + data.total + ' memories', 'success');
     }).catch(function(e) { toast(e.message, 'error'); });
   });
 
@@ -1999,21 +1999,21 @@ function initEventHandlers() {
     file.text().then(function(text) {
       var data = JSON.parse(text);
       var memories = data.memories || data;
-      if (!Array.isArray(memories)) throw new Error('Formato non valido');
+      if (!Array.isArray(memories)) throw new Error('Invalid format');
       return api.post('/import', { memories: memories });
     }).then(function(res) {
-      toast('Import: ' + res.imported + ' memorie importate', 'success');
+      toast('Import: ' + res.imported + ' memories imported', 'success');
       e.target.value = '';
-    }).catch(function(err) { toast('Errore import: ' + err.message, 'error'); });
+    }).catch(function(err) { toast('Import error: ' + err.message, 'error'); });
   });
 
   $('#btn-add-relation').addEventListener('click', function() {
     var source = parseInt($('#rel-source').value);
     var target = parseInt($('#rel-target').value);
     var relation = $('#rel-type').value.trim() || 'related';
-    if (!source || !target) { toast('Inserisci ID sorgente e target', 'error'); return; }
+    if (!source || !target) { toast('Enter source and target ID', 'error'); return; }
     api.post('/memories/' + source + '/relations', { target_id: target, relation: relation }).then(function() {
-      toast('Relazione creata', 'success'); loadTags();
+      toast('Relation created', 'success'); loadTags();
     }).catch(function(e) { toast(e.message, 'error'); });
   });
 
@@ -2040,21 +2040,21 @@ function initEventHandlers() {
   $('#btn-audit-refresh').addEventListener('click', loadAuditLog);
   $('#audit-event-filter').addEventListener('change', loadAuditLog);
 
-  /* Chiudi modal con click su overlay */
+  /* Close modal on overlay click */
   $$('.modal-overlay').forEach(function(overlay) {
     overlay.addEventListener('click', function(e) {
       if (e.target === overlay) overlay.classList.remove('open');
     });
   });
 
-  /* Chiudi modal con Escape */
+  /* Close modal with Escape */
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
       $$('.modal-overlay.open').forEach(function(m) { m.classList.remove('open'); });
     }
   });
 
-  /* Filtro tag */
+  /* Tag filter */
   $('#tag-search').addEventListener('input', function() {
     var q = $('#tag-search').value.toLowerCase();
     $$('#tag-cloud .badge-tag').forEach(function(el) {
@@ -2063,7 +2063,7 @@ function initEventHandlers() {
   });
 }
 
-/* ── Carica lista agenti nel selettore ─────────────────────────────── */
+/* ── Load agent list in selector ──────────────────────────────────── */
 function loadAgentSelector() {
   api.get('/agents').then(function(res) {
     var agents = res.agents || res;
@@ -2078,10 +2078,10 @@ function loadAgentSelector() {
       select.insertAdjacentHTML('afterbegin', '<option value="default">default</option>');
     }
     select.value = current || 'default';
-  }).catch(function() { /* mantieni default */ });
+  }).catch(function() { /* keep default */ });
 }
 
-/* ── Inizializzazione ──────────────────────────────────────────────── */
+/* ── Initialization ────────────────────────────────────────────────── */
 function init() {
   applyTheme();
   initNav();

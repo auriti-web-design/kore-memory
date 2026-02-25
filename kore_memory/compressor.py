@@ -41,11 +41,11 @@ class CompressionResult:
 
 def run_compression(agent_id: str = "default") -> CompressionResult:
     """
-    Compressione completa: trova memorie simili e le unisce.
-    Thread-safe: un solo run alla volta.
+    Full compression: finds similar memories and merges them.
+    Thread-safe: only one run at a time.
     """
     if not _compress_lock.acquire(blocking=False):
-        return CompressionResult(0, 0, 0)  # run già in corso
+        return CompressionResult(0, 0, 0)  # run already in progress
 
     try:
         return _run_compression_inner(agent_id)
@@ -92,13 +92,13 @@ def _load_compressible_memories(agent_id: str = "default") -> list[dict]:
 
 def _find_clusters(memories: list[dict]) -> list[list[dict]]:
     """
-    Clustering greedy: trova gruppi di memorie con similarità > threshold.
+    Greedy clustering: finds groups of memories with similarity > threshold.
 
     Uses numpy matrix multiplication when available for O(n²) batch similarity
     computation (much faster than O(n²) pure Python pairwise comparisons).
     Falls back to pure Python if numpy is not installed.
     """
-    # Pre-deserializza tutti i vettori una sola volta
+    # Pre-deserialize all vectors once
     vectors: dict[int, list[float]] = {}
     for mem in memories:
         try:
@@ -174,7 +174,7 @@ def _find_clusters_python(
         vec_a = vectors[mem_a["id"]]
         cluster = [mem_a]
 
-        # Confronta solo con memorie successive (evita doppi confronti)
+        # Compare only with subsequent memories (avoids double comparisons)
         for mem_b in memories[i + 1:]:
             if mem_b["id"] in used:
                 continue
@@ -226,10 +226,10 @@ def _merge_cluster(cluster: list[dict], agent_id: str = "default") -> int | None
     )
     new_id, _ = save_memory(req, agent_id=agent_id)
 
-    # Migra tag e relazioni dagli originali al nuovo record, poi segna come compressi
+    # Migrate tags and relations from originals to the new record, then mark as compressed
     ids = [m["id"] for m in cluster]
     with get_connection() as conn:
-        # Copia tag unici al nuovo record
+        # Copy unique tags to the new record
         placeholders = ",".join("?" for _ in ids)
         conn.execute(
             f"""INSERT OR IGNORE INTO memory_tags (memory_id, tag)
@@ -237,24 +237,24 @@ def _merge_cluster(cluster: list[dict], agent_id: str = "default") -> int | None
             [new_id, *ids],
         )
 
-        # Ricollega relazioni: source_id -> new_id
+        # Relink relations: source_id -> new_id
         conn.execute(
             f"""UPDATE memory_relations SET source_id = ?
                 WHERE source_id IN ({placeholders})""",
             [new_id, *ids],
         )
-        # Ricollega relazioni: target_id -> new_id
+        # Relink relations: target_id -> new_id
         conn.execute(
             f"""UPDATE memory_relations SET target_id = ?
                 WHERE target_id IN ({placeholders})""",
             [new_id, *ids],
         )
-        # Rimuovi eventuali self-relations create dal relink
+        # Remove any self-relations created by the relink
         conn.execute(
             "DELETE FROM memory_relations WHERE source_id = target_id",
         )
 
-        # Segna gli originali come compressi
+        # Mark originals as compressed
         conn.executemany(
             "UPDATE memories SET compressed_into = ? WHERE id = ?",
             [(new_id, mid) for mid in ids],

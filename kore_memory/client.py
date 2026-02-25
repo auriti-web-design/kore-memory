@@ -1,14 +1,14 @@
 """
 Kore — Python SDK Client
-Client type-safe per interagire con il server Kore via HTTP.
-Supporta sia uso sincrono (KoreClient) che asincrono (AsyncKoreClient).
+Type-safe client for interacting with the Kore server via HTTP.
+Supports both synchronous (KoreClient) and asynchronous (AsyncKoreClient) usage.
 
-Uso:
+Usage:
     from kore_memory import KoreClient
 
     with KoreClient("http://localhost:8765", api_key="...") as kore:
-        kore.save("Ricordo importante", category="project", importance=4)
-        results = kore.search("progetto")
+        kore.save("Important memory", category="project", importance=4)
+        results = kore.search("project")
 """
 
 from __future__ import annotations
@@ -30,11 +30,11 @@ from .models import (
     TagResponse,
 )
 
-# ── Eccezioni ────────────────────────────────────────────────────────────────
+# ── Exceptions ───────────────────────────────────────────────────────────────
 
 
 class KoreError(Exception):
-    """Errore base per il client Kore."""
+    """Base error class for the Kore client."""
 
     def __init__(self, message: str, status_code: int | None = None, detail: Any = None):
         super().__init__(message)
@@ -43,30 +43,30 @@ class KoreError(Exception):
 
 
 class KoreAuthError(KoreError):
-    """Autenticazione fallita (401/403)."""
+    """Authentication failed (401/403)."""
 
 
 class KoreNotFoundError(KoreError):
-    """Risorsa non trovata (404)."""
+    """Resource not found (404)."""
 
 
 class KoreRateLimitError(KoreError):
-    """Rate limit superato (429)."""
+    """Rate limit exceeded (429)."""
 
 
 class KoreServerError(KoreError):
-    """Errore lato server (5xx)."""
+    """Server-side error (5xx)."""
 
 
 class KoreValidationError(KoreError):
-    """Validazione fallita (422)."""
+    """Validation failed (422)."""
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
 
 def _raise_for_status(response: httpx.Response) -> None:
-    """Converte errori HTTP in eccezioni Kore tipizzate."""
+    """Converts HTTP errors into typed Kore exceptions."""
     if response.is_success:
         return
 
@@ -94,25 +94,25 @@ def _raise_for_status(response: httpx.Response) -> None:
 
 
 def _build_headers(api_key: str | None, agent_id: str) -> dict[str, str]:
-    """Costruisce gli header comuni per le richieste."""
+    """Builds the common request headers."""
     headers: dict[str, str] = {"X-Agent-Id": agent_id}
     if api_key:
         headers["X-Kore-Key"] = api_key
     return headers
 
 
-# ── Client sincrono ──────────────────────────────────────────────────────────
+# ── Synchronous client ───────────────────────────────────────────────────────
 
 
 class KoreClient:
     """
-    Client sincrono per Kore Memory API.
+    Synchronous client for the Kore Memory API.
 
     Args:
-        base_url: URL del server Kore (default: http://localhost:8765)
-        api_key: API key per autenticazione (opzionale su localhost)
-        agent_id: Namespace agente (default: "default")
-        timeout: Timeout richieste in secondi (default: 10.0)
+        base_url: Kore server URL (default: http://localhost:8765)
+        api_key: API key for authentication (optional on localhost)
+        agent_id: Agent namespace (default: "default")
+        timeout: Request timeout in seconds (default: 10.0)
     """
 
     def __init__(
@@ -137,7 +137,7 @@ class KoreClient:
         self.close()
 
     def close(self) -> None:
-        """Chiude il client HTTP."""
+        """Closes the HTTP client."""
         self._client.close()
 
     # ── Core ─────────────────────────────────────────────────────────────
@@ -149,7 +149,7 @@ class KoreClient:
         importance: int = 1,
         ttl_hours: int | None = None,
     ) -> MemorySaveResponse:
-        """Salva una memoria. Importance auto-calcolata se 1."""
+        """Saves a memory. Importance is auto-calculated when set to 1."""
         payload: dict[str, Any] = {
             "content": content,
             "category": category,
@@ -165,7 +165,7 @@ class KoreClient:
         self,
         memories: list[dict[str, Any]],
     ) -> BatchSaveResponse:
-        """Salva fino a 100 memorie in una sola richiesta."""
+        """Saves up to 100 memories in a single request."""
         r = self._client.post("/save/batch", json={"memories": memories})
         _raise_for_status(r)
         return BatchSaveResponse(**r.json())
@@ -178,7 +178,7 @@ class KoreClient:
         category: str | None = None,
         semantic: bool = True,
     ) -> MemorySearchResponse:
-        """Cerca memorie per significato o testo."""
+        """Searches memories by meaning or text."""
         params: dict[str, Any] = {
             "q": q,
             "limit": limit,
@@ -197,7 +197,7 @@ class KoreClient:
         limit: int = 20,
         offset: int = 0,
     ) -> MemorySearchResponse:
-        """Cronologia memorie su un argomento (dal più vecchio al più recente)."""
+        """Returns the memory timeline for a subject (oldest to newest)."""
         r = self._client.get("/timeline", params={
             "subject": subject,
             "limit": limit,
@@ -207,7 +207,7 @@ class KoreClient:
         return MemorySearchResponse(**r.json())
 
     def delete(self, memory_id: int) -> bool:
-        """Elimina una memoria. Restituisce True se eliminata."""
+        """Deletes a memory. Returns True if deleted."""
         r = self._client.delete(f"/memories/{memory_id}")
         if r.status_code == 404:
             return False
@@ -217,25 +217,25 @@ class KoreClient:
     # ── Tags ─────────────────────────────────────────────────────────────
 
     def add_tags(self, memory_id: int, tags: list[str]) -> TagResponse:
-        """Aggiunge tag a una memoria."""
+        """Adds tags to a memory."""
         r = self._client.post(f"/memories/{memory_id}/tags", json={"tags": tags})
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     def get_tags(self, memory_id: int) -> TagResponse:
-        """Restituisce i tag di una memoria."""
+        """Returns the tags of a memory."""
         r = self._client.get(f"/memories/{memory_id}/tags")
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     def remove_tags(self, memory_id: int, tags: list[str]) -> TagResponse:
-        """Rimuove tag da una memoria."""
+        """Removes tags from a memory."""
         r = self._client.request("DELETE", f"/memories/{memory_id}/tags", json={"tags": tags})
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     def search_by_tag(self, tag: str, limit: int = 20) -> MemorySearchResponse:
-        """Cerca memorie per tag."""
+        """Searches memories by tag."""
         r = self._client.get(f"/tags/{tag}/memories", params={"limit": limit})
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
@@ -248,7 +248,7 @@ class KoreClient:
         target_id: int,
         relation: str = "related",
     ) -> RelationResponse:
-        """Crea una relazione tra due memorie."""
+        """Creates a relation between two memories."""
         r = self._client.post(f"/memories/{memory_id}/relations", json={
             "target_id": target_id,
             "relation": relation,
@@ -257,7 +257,7 @@ class KoreClient:
         return RelationResponse(**r.json())
 
     def get_relations(self, memory_id: int) -> RelationResponse:
-        """Restituisce le relazioni di una memoria."""
+        """Returns the relations of a memory."""
         r = self._client.get(f"/memories/{memory_id}/relations")
         _raise_for_status(r)
         return RelationResponse(**r.json())
@@ -265,19 +265,19 @@ class KoreClient:
     # ── Maintenance ──────────────────────────────────────────────────────
 
     def decay_run(self) -> DecayRunResponse:
-        """Ricalcola i decay score delle memorie."""
+        """Recalculates the decay scores of all memories."""
         r = self._client.post("/decay/run")
         _raise_for_status(r)
         return DecayRunResponse(**r.json())
 
     def compress(self) -> CompressRunResponse:
-        """Unisce memorie simili."""
+        """Merges similar memories."""
         r = self._client.post("/compress")
         _raise_for_status(r)
         return CompressRunResponse(**r.json())
 
     def cleanup(self) -> CleanupExpiredResponse:
-        """Rimuove memorie con TTL scaduto."""
+        """Removes memories with an expired TTL."""
         r = self._client.post("/cleanup")
         _raise_for_status(r)
         return CleanupExpiredResponse(**r.json())
@@ -285,13 +285,13 @@ class KoreClient:
     # ── Backup ───────────────────────────────────────────────────────────
 
     def export_memories(self) -> MemoryExportResponse:
-        """Esporta tutte le memorie attive in JSON."""
+        """Exports all active memories as JSON."""
         r = self._client.get("/export")
         _raise_for_status(r)
         return MemoryExportResponse(**r.json())
 
     def import_memories(self, memories: list[dict[str, Any]]) -> MemoryImportResponse:
-        """Importa memorie da una lista di dict."""
+        """Imports memories from a list of dicts."""
         r = self._client.post("/import", json={"memories": memories})
         _raise_for_status(r)
         return MemoryImportResponse(**r.json())
@@ -299,24 +299,24 @@ class KoreClient:
     # ── Utility ──────────────────────────────────────────────────────────
 
     def health(self) -> dict[str, Any]:
-        """Health check del server."""
+        """Server health check."""
         r = self._client.get("/health")
         _raise_for_status(r)
         return r.json()
 
 
-# ── Client asincrono ─────────────────────────────────────────────────────────
+# ── Asynchronous client ──────────────────────────────────────────────────────
 
 
 class AsyncKoreClient:
     """
-    Client asincrono per Kore Memory API.
+    Asynchronous client for the Kore Memory API.
 
     Args:
-        base_url: URL del server Kore (default: http://localhost:8765)
-        api_key: API key per autenticazione (opzionale su localhost)
-        agent_id: Namespace agente (default: "default")
-        timeout: Timeout richieste in secondi (default: 10.0)
+        base_url: Kore server URL (default: http://localhost:8765)
+        api_key: API key for authentication (optional on localhost)
+        agent_id: Agent namespace (default: "default")
+        timeout: Request timeout in seconds (default: 10.0)
     """
 
     def __init__(
@@ -341,7 +341,7 @@ class AsyncKoreClient:
         await self.close()
 
     async def close(self) -> None:
-        """Chiude il client HTTP."""
+        """Closes the HTTP client."""
         await self._client.aclose()
 
     # ── Core ─────────────────────────────────────────────────────────────
@@ -353,7 +353,7 @@ class AsyncKoreClient:
         importance: int = 1,
         ttl_hours: int | None = None,
     ) -> MemorySaveResponse:
-        """Salva una memoria. Importance auto-calcolata se 1."""
+        """Saves a memory. Importance is auto-calculated when set to 1."""
         payload: dict[str, Any] = {
             "content": content,
             "category": category,
@@ -369,7 +369,7 @@ class AsyncKoreClient:
         self,
         memories: list[dict[str, Any]],
     ) -> BatchSaveResponse:
-        """Salva fino a 100 memorie in una sola richiesta."""
+        """Saves up to 100 memories in a single request."""
         r = await self._client.post("/save/batch", json={"memories": memories})
         _raise_for_status(r)
         return BatchSaveResponse(**r.json())
@@ -382,7 +382,7 @@ class AsyncKoreClient:
         category: str | None = None,
         semantic: bool = True,
     ) -> MemorySearchResponse:
-        """Cerca memorie per significato o testo."""
+        """Searches memories by meaning or text."""
         params: dict[str, Any] = {
             "q": q,
             "limit": limit,
@@ -401,7 +401,7 @@ class AsyncKoreClient:
         limit: int = 20,
         offset: int = 0,
     ) -> MemorySearchResponse:
-        """Cronologia memorie su un argomento (dal più vecchio al più recente)."""
+        """Returns the memory timeline for a subject (oldest to newest)."""
         r = await self._client.get("/timeline", params={
             "subject": subject,
             "limit": limit,
@@ -411,7 +411,7 @@ class AsyncKoreClient:
         return MemorySearchResponse(**r.json())
 
     async def delete(self, memory_id: int) -> bool:
-        """Elimina una memoria. Restituisce True se eliminata."""
+        """Deletes a memory. Returns True if deleted."""
         r = await self._client.delete(f"/memories/{memory_id}")
         if r.status_code == 404:
             return False
@@ -421,25 +421,25 @@ class AsyncKoreClient:
     # ── Tags ─────────────────────────────────────────────────────────────
 
     async def add_tags(self, memory_id: int, tags: list[str]) -> TagResponse:
-        """Aggiunge tag a una memoria."""
+        """Adds tags to a memory."""
         r = await self._client.post(f"/memories/{memory_id}/tags", json={"tags": tags})
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     async def get_tags(self, memory_id: int) -> TagResponse:
-        """Restituisce i tag di una memoria."""
+        """Returns the tags of a memory."""
         r = await self._client.get(f"/memories/{memory_id}/tags")
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     async def remove_tags(self, memory_id: int, tags: list[str]) -> TagResponse:
-        """Rimuove tag da una memoria."""
+        """Removes tags from a memory."""
         r = await self._client.request("DELETE", f"/memories/{memory_id}/tags", json={"tags": tags})
         _raise_for_status(r)
         return TagResponse(**r.json())
 
     async def search_by_tag(self, tag: str, limit: int = 20) -> MemorySearchResponse:
-        """Cerca memorie per tag."""
+        """Searches memories by tag."""
         r = await self._client.get(f"/tags/{tag}/memories", params={"limit": limit})
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
@@ -452,7 +452,7 @@ class AsyncKoreClient:
         target_id: int,
         relation: str = "related",
     ) -> RelationResponse:
-        """Crea una relazione tra due memorie."""
+        """Creates a relation between two memories."""
         r = await self._client.post(f"/memories/{memory_id}/relations", json={
             "target_id": target_id,
             "relation": relation,
@@ -461,7 +461,7 @@ class AsyncKoreClient:
         return RelationResponse(**r.json())
 
     async def get_relations(self, memory_id: int) -> RelationResponse:
-        """Restituisce le relazioni di una memoria."""
+        """Returns the relations of a memory."""
         r = await self._client.get(f"/memories/{memory_id}/relations")
         _raise_for_status(r)
         return RelationResponse(**r.json())
@@ -469,19 +469,19 @@ class AsyncKoreClient:
     # ── Maintenance ──────────────────────────────────────────────────────
 
     async def decay_run(self) -> DecayRunResponse:
-        """Ricalcola i decay score delle memorie."""
+        """Recalculates the decay scores of all memories."""
         r = await self._client.post("/decay/run")
         _raise_for_status(r)
         return DecayRunResponse(**r.json())
 
     async def compress(self) -> CompressRunResponse:
-        """Unisce memorie simili."""
+        """Merges similar memories."""
         r = await self._client.post("/compress")
         _raise_for_status(r)
         return CompressRunResponse(**r.json())
 
     async def cleanup(self) -> CleanupExpiredResponse:
-        """Rimuove memorie con TTL scaduto."""
+        """Removes memories with an expired TTL."""
         r = await self._client.post("/cleanup")
         _raise_for_status(r)
         return CleanupExpiredResponse(**r.json())
@@ -489,13 +489,13 @@ class AsyncKoreClient:
     # ── Backup ───────────────────────────────────────────────────────────
 
     async def export_memories(self) -> MemoryExportResponse:
-        """Esporta tutte le memorie attive in JSON."""
+        """Exports all active memories as JSON."""
         r = await self._client.get("/export")
         _raise_for_status(r)
         return MemoryExportResponse(**r.json())
 
     async def import_memories(self, memories: list[dict[str, Any]]) -> MemoryImportResponse:
-        """Importa memorie da una lista di dict."""
+        """Imports memories from a list of dicts."""
         r = await self._client.post("/import", json={"memories": memories})
         _raise_for_status(r)
         return MemoryImportResponse(**r.json())
@@ -503,7 +503,7 @@ class AsyncKoreClient:
     # ── Utility ──────────────────────────────────────────────────────────
 
     async def health(self) -> dict[str, Any]:
-        """Health check del server."""
+        """Server health check."""
         r = await self._client.get("/health")
         _raise_for_status(r)
         return r.json()

@@ -90,22 +90,22 @@ _SESSION_ID_RE = _re.compile(r'^[a-zA-Z0-9_\-\.]{1,128}$')
 
 
 def _validate_session_id(raw: str | None) -> str | None:
-    """Valida e sanitizza X-Session-Id header. None se assente o invalido."""
+    """Validate and sanitize X-Session-Id header. None if absent or invalid."""
     if not raw:
         return None
     raw = raw.strip()
     if not _SESSION_ID_RE.match(raw):
-        raise HTTPException(status_code=400, detail="X-Session-Id contiene caratteri non validi")
+        raise HTTPException(status_code=400, detail="X-Session-Id contains invalid characters")
     return raw
 
 
 def _get_client_ip(request: Request) -> str:
-    """Estrae IP client. Ignora X-Forwarded-For in local-only mode per evitare spoofing."""
-    # In local-only mode, usa solo l'IP diretto del socket — previene
-    # spoofing via X-Forwarded-For: 127.0.0.1 per bypassare auth/rate-limit
+    """Extract client IP. Ignores X-Forwarded-For in local-only mode to prevent spoofing."""
+    # In local-only mode, use the raw socket IP only — prevents
+    # spoofing via X-Forwarded-For: 127.0.0.1 to bypass auth/rate-limit
     if config.LOCAL_ONLY:
         return request.client.host if request.client else "unknown"
-    # Dietro reverse proxy fidato, leggi il primo IP dalla catena
+    # Behind a trusted reverse proxy, read the first IP from the chain
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -116,7 +116,7 @@ def _get_client_ip(request: Request) -> str:
 
 
 def _check_rate_limit(client_ip: str, path: str) -> None:
-    """Controlla rate limit per IP + path. Lancia HTTPException 429 se superato."""
+    """Check rate limit for IP + path. Raises HTTPException 429 if exceeded."""
     limit_conf = config.RATE_LIMITS.get(path)
     if not limit_conf:
         return
@@ -125,7 +125,7 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
     key = f"{client_ip}:{path}"
 
     with _rate_lock:
-        # Cleanup periodico di bucket vecchi (ogni 60s) — previene memory leak
+        # Periodic cleanup of stale buckets (every 60s) — prevents memory leak
         global _rate_last_cleanup
         if now - _rate_last_cleanup > 60:
             stale_keys = [k for k, timestamps in _rate_buckets.items()
@@ -134,7 +134,7 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
                 del _rate_buckets[k]
             _rate_last_cleanup = now
 
-        # Pulisci richieste scadute per questo bucket
+        # Discard expired requests for this bucket
         _rate_buckets[key] = [ts for ts in _rate_buckets[key] if now - ts < window]
 
         if len(_rate_buckets[key]) >= max_requests:
@@ -192,7 +192,7 @@ async def lifespan(app: FastAPI):
         from .audit import register_audit_handler
         register_audit_handler()
     yield
-    # Graceful shutdown: chiudi il pool di connessioni SQLite
+    # Graceful shutdown: close the SQLite connection pool
     from .database import _pool
     _pool.clear()
 
@@ -207,7 +207,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-# CORS — origini configurabili via env, default restrittivo
+# CORS — configurable origins via env, restrictive by default
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.CORS_ORIGINS,
@@ -216,15 +216,15 @@ app.add_middleware(
     allow_headers=["X-Kore-Key", "X-Agent-Id", "Content-Type"],
 )
 
-# Security headers su tutte le risposte
+# Security headers on all responses
 app.add_middleware(SecurityHeadersMiddleware)
 
 
-# Handler globale per eccezioni non gestite — no stack trace al client
+# Global handler for unhandled exceptions — no stack trace exposed to client
 @app.exception_handler(Exception)
 async def _global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     import logging
-    logging.error("Errore non gestito: %s", exc, exc_info=True)
+    logging.error("Unhandled error: %s", exc, exc_info=True)
     return JSONResponse(status_code=500, content={"error": "Internal server error"})
 
 # Shared auth dependencies
@@ -256,7 +256,7 @@ def save_batch(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> BatchSaveResponse:
-    """Salva più memorie in una sola richiesta (max 100). Usa batch embedding."""
+    """Save multiple memories in a single request (max 100). Uses batch embedding."""
     _check_rate_limit(_get_client_ip(request), "/save")
     results = save_memory_batch(req.memories, agent_id=agent_id)
     saved = [MemorySaveResponse(id=mid, importance=imp) for mid, imp in results]
@@ -372,7 +372,7 @@ def update(
     """Update a memory's content, category, or importance. Agents can only update their own memories."""
     if not update_memory(memory_id, req, agent_id=agent_id):
         raise HTTPException(status_code=404, detail="Memory not found")
-    # Recupera importance reale dal DB (req.importance potrebbe essere None)
+    # Fetch the actual importance from DB (req.importance may be None)
     from .database import get_connection
     with get_connection() as conn:
         row = conn.execute(
@@ -403,7 +403,7 @@ def tag_add(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> TagResponse:
-    """Aggiunge tag a una memoria."""
+    """Add tags to a memory."""
     count = add_tags(memory_id, req.tags, agent_id=agent_id)
     tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=count, tags=tags)
@@ -416,7 +416,7 @@ def tag_remove(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> TagResponse:
-    """Rimuove tag da una memoria."""
+    """Remove tags from a memory."""
     remove_tags(memory_id, req.tags, agent_id=agent_id)
     tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=len(tags), tags=tags)
@@ -428,7 +428,7 @@ def tag_list(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> TagResponse:
-    """Restituisce i tag di una memoria (solo se appartiene all'agent)."""
+    """Return the tags of a memory (only if it belongs to the agent)."""
     tags = get_tags(memory_id, agent_id=agent_id)
     return TagResponse(count=len(tags), tags=tags)
 
@@ -440,7 +440,7 @@ def tag_search(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemorySearchResponse:
-    """Cerca memorie per tag."""
+    """Search memories by tag."""
     results = search_by_tag(tag, agent_id=agent_id, limit=limit)
     return MemorySearchResponse(results=results, total=len(results))
 
@@ -454,7 +454,7 @@ def relation_add(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> RelationResponse:
-    """Crea una relazione tra due memorie."""
+    """Create a relation between two memories."""
     add_relation(memory_id, req.target_id, req.relation, agent_id=agent_id)
     relations = get_relations(memory_id, agent_id=agent_id)
     return RelationResponse(relations=relations, total=len(relations))
@@ -466,7 +466,7 @@ def relation_list(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> RelationResponse:
-    """Restituisce le relazioni di una memoria."""
+    """Return the relations of a memory."""
     relations = get_relations(memory_id, agent_id=agent_id)
     return RelationResponse(relations=relations, total=len(relations))
 
@@ -507,7 +507,7 @@ def cleanup(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> CleanupExpiredResponse:
-    """Remove expired memories (TTL scaduto) for this agent."""
+    """Remove expired memories (elapsed TTL) for this agent."""
     removed = cleanup_expired(agent_id=agent_id)
     return CleanupExpiredResponse(removed=removed)
 
@@ -542,7 +542,7 @@ def export(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemoryExportResponse:
-    """Esporta tutte le memorie attive dell'agente (senza embedding)."""
+    """Export all active memories for the agent (without embeddings)."""
     data = export_memories(agent_id=agent_id)
     return MemoryExportResponse(memories=data, total=len(data))
 
@@ -553,7 +553,7 @@ def import_data(
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> MemoryImportResponse:
-    """Importa memorie da un export precedente."""
+    """Import memories from a previous export."""
     count = import_memories(req.memories, agent_id=agent_id)
     return MemoryImportResponse(imported=count)
 
@@ -728,7 +728,7 @@ def audit_log(
 
 @app.get("/favicon.svg", include_in_schema=False)
 async def favicon():
-    """Serve la favicon SVG."""
+    """Serve the SVG favicon."""
     from pathlib import Path
     svg_path = Path(__file__).parent.parent / "assets" / "favicon.svg"
     if svg_path.exists():
@@ -740,7 +740,7 @@ async def favicon():
 
 @app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
 async def dashboard(request: Request) -> HTMLResponse:
-    """Dashboard web per gestione memorie. Richiede auth se non in local-only mode."""
+    """Web dashboard for memory management. Requires auth if not in local-only mode."""
     from .auth import _is_local, _local_only_mode
     if not (_local_only_mode() and _is_local(request)):
         await require_auth(request, request.headers.get("X-Kore-Key"))
@@ -757,7 +757,7 @@ async def dashboard(request: Request) -> HTMLResponse:
 def health() -> JSONResponse:
     from .repository import _embeddings_available
     from .database import get_connection
-    # Verifica connettivita' DB
+    # Verify DB connectivity
     db_ok = True
     try:
         with get_connection() as conn:

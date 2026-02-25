@@ -15,7 +15,7 @@ from .scorer import auto_score
 
 _EMBEDDINGS_AVAILABLE: bool | None = None
 
-# Lock per operazioni di manutenzione — previene run concorrenti
+# Lock for maintenance operations — prevents concurrent runs
 _decay_lock = threading.Lock()
 _compress_lock = threading.Lock()
 
@@ -47,10 +47,10 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: s
         try:
             embedding_blob = serialize(embed(req.content))
         except Exception:
-            # Embedding fallito — salva comunque senza embedding
+            # Embedding failed — save anyway without embedding
             embedding_blob = None
 
-    # Calcola expires_at se TTL specificato
+    # Compute expires_at if TTL is specified
     expires_at = None
     if req.ttl_hours:
         expires_at = (datetime.now(UTC) + timedelta(hours=req.ttl_hours)).isoformat()
@@ -80,7 +80,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: s
         )
         row_id = cursor.lastrowid
 
-    # Invalida cache vettoriale per l'agente
+    # Invalidate vector cache for the agent
     if embedding_blob:
         from .vector_index import get_index
         get_index().invalidate(agent_id)
@@ -147,11 +147,11 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
             )
             results.append((cursor.lastrowid, importances[i]))
 
-    # Emetti evento audit per ogni memoria salvata
+    # Emit audit event for each saved memory
     for row_id, _ in results:
         emit(MEMORY_SAVED, {"id": row_id, "agent_id": agent_id})
 
-    # Invalida cache vettoriale una sola volta
+    # Invalidate vector cache only once
     if any(e is not None for e in embeddings):
         from .vector_index import get_index
         get_index().invalidate(agent_id)
@@ -232,7 +232,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
         if req.content is not None:
             updates.append("content = ?")
             params.append(req.content)
-            # Rigenera embedding se il contenuto cambia
+            # Regenerate embedding if content changes
             if _embeddings_available():
                 from .embedder import embed, serialize
                 try:
@@ -263,7 +263,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
             params,
         )
 
-    # Invalida cache vettoriale
+    # Invalidate vector cache
     if req.content is not None:
         from .vector_index import get_index
         get_index().invalidate(agent_id)
@@ -273,7 +273,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
 
 
 def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
-    """Elimina una memoria per id, scoped per agente. Restituisce True se eliminata."""
+    """Delete a memory by id, scoped to agent. Returns True if deleted."""
     with get_connection() as conn:
         cursor = conn.execute(
             "DELETE FROM memories WHERE id = ? AND agent_id = ?",
@@ -290,7 +290,7 @@ def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
 
 
 def cleanup_expired(agent_id: str | None = None) -> int:
-    """Elimina memorie con TTL scaduto. Restituisce il numero di record rimossi."""
+    """Delete memories with elapsed TTL. Returns the number of records removed."""
     with get_connection() as conn:
         sql = "DELETE FROM memories WHERE expires_at IS NOT NULL AND expires_at <= datetime('now')"
         params: list = []
@@ -304,14 +304,14 @@ def cleanup_expired(agent_id: str | None = None) -> int:
 def run_decay_pass(agent_id: str | None = None) -> int:
     """
     Recalculate decay_score for all active memories (optionally scoped to agent).
-    Pulisce anche le memorie con TTL scaduto.
-    Returns the count of memories updated. Thread-safe: un solo run alla volta.
+    Also cleans up memories with elapsed TTL.
+    Returns the count of memories updated. Thread-safe: only one run at a time.
     """
     if not _decay_lock.acquire(blocking=False):
-        return 0  # run già in corso — skip silenzioso
+        return 0  # run already in progress — silent skip
 
     try:
-        # Pulizia memorie scadute prima del ricalcolo
+        # Clean up expired memories before recalculating
         cleanup_expired(agent_id)
         return _run_decay_pass_inner(agent_id)
     finally:
@@ -382,7 +382,7 @@ def get_timeline(
 
 
 def export_memories(agent_id: str = "default") -> list[dict]:
-    """Esporta tutte le memorie attive dell'agente come lista di dict (senza embedding)."""
+    """Export all active memories for the agent as a list of dicts (without embeddings)."""
     with get_connection() as conn:
         rows = conn.execute(
             """
@@ -402,7 +402,7 @@ _VALID_CATEGORIES = {"general", "project", "trading", "finance", "person", "pref
 
 
 def import_memories(records: list[dict], agent_id: str = "default") -> int:
-    """Importa memorie da una lista di dict. Restituisce il numero di record importati."""
+    """Import memories from a list of dicts. Returns the number of records imported."""
     imported = 0
     for rec in records:
         content = rec.get("content", "").strip()
@@ -428,8 +428,8 @@ def import_memories(records: list[dict], agent_id: str = "default") -> int:
 # ── Tag ──────────────────────────────────────────────────────────────────────
 
 def add_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
-    """Aggiunge tag a una memoria. Restituisce il numero di tag aggiunti."""
-    # Verifica che la memoria appartenga all'agente
+    """Add tags to a memory. Returns the number of tags added."""
+    # Verify that the memory belongs to the agent
     with get_connection() as conn:
         row = conn.execute(
             "SELECT id FROM memories WHERE id = ? AND agent_id = ?",
@@ -454,7 +454,7 @@ def add_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
 
 
 def remove_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
-    """Rimuove tag da una memoria. Restituisce il numero di tag rimossi."""
+    """Remove tags from a memory. Returns the number of tags removed."""
     with get_connection() as conn:
         row = conn.execute(
             "SELECT id FROM memories WHERE id = ? AND agent_id = ?",
@@ -475,11 +475,11 @@ def remove_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> i
 
 def get_tags(memory_id: int, agent_id: str = "default") -> list[str]:
     """
-    Restituisce i tag di una memoria.
-    Verifica che la memoria appartenga all'agent_id specificato.
+    Return the tags of a memory.
+    Verifies that the memory belongs to the specified agent_id.
     """
     with get_connection() as conn:
-        # JOIN con memories per verificare ownership
+        # JOIN with memories to verify ownership
         rows = conn.execute(
             """
             SELECT mt.tag 
@@ -494,7 +494,7 @@ def get_tags(memory_id: int, agent_id: str = "default") -> list[str]:
 
 
 def search_by_tag(tag: str, agent_id: str = "default", limit: int = 20) -> list[MemoryRecord]:
-    """Cerca memorie per tag."""
+    """Search memories by tag."""
     with get_connection() as conn:
         rows = conn.execute(
             """
@@ -513,14 +513,14 @@ def search_by_tag(tag: str, agent_id: str = "default", limit: int = 20) -> list[
     return [_row_to_record(r) for r in rows]
 
 
-# ── Relazioni ────────────────────────────────────────────────────────────────
+# ── Relations ────────────────────────────────────────────────────────────────
 
 def add_relation(
     source_id: int, target_id: int, relation: str = "related", agent_id: str = "default"
 ) -> bool:
-    """Crea una relazione tra due memorie. Entrambe devono appartenere all'agente."""
+    """Create a relation between two memories. Both must belong to the agent."""
     with get_connection() as conn:
-        # Verifica che entrambe le memorie appartengano all'agente
+        # Verify that both memories belong to the agent
         count = conn.execute(
             "SELECT COUNT(*) FROM memories WHERE id IN (?, ?) AND agent_id = ?",
             (source_id, target_id, agent_id),
@@ -539,7 +539,7 @@ def add_relation(
 
 
 def get_relations(memory_id: int, agent_id: str = "default") -> list[dict]:
-    """Restituisce tutte le relazioni di una memoria (in entrambe le direzioni)."""
+    """Return all relations of a memory (in both directions)."""
     with get_connection() as conn:
         rows = conn.execute(
             """
@@ -779,7 +779,7 @@ def _count_active_memories(query: str, category: str | None, agent_id: str) -> i
             params = {"query": f"%{escaped}%", "agent_id": agent_id}
 
         if category:
-            # Prefisso m. per FTS JOIN, nessun prefisso per query LIKE diretta
+            # Prefix m. for FTS JOIN, no prefix for direct LIKE query
             col_prefix = "m." if safe_query else ""
             sql = sql.rstrip() + f" AND {col_prefix}category = :category"
             params["category"] = category
@@ -855,7 +855,7 @@ def _fts_search(
                 ORDER BY decay_score DESC, id DESC
                 LIMIT :limit
             """
-            # q=* → lista tutte le memorie (wildcard globale)
+            # q=* → list all memories (global wildcard)
             if query.strip() == "*":
                 escaped_query = ""
             else:
@@ -889,19 +889,19 @@ def _semantic_search(
     agent_id: str = "default",
     cursor: tuple[float, int] | None = None,
 ) -> list[MemoryRecord]:
-    """Ricerca semantica con indice vettoriale in-memory, scoped per agente."""
+    """Semantic search with in-memory vector index, scoped to agent."""
     from .embedder import embed
     from .vector_index import get_index
 
     query_vec = embed(query)
     index = get_index()
 
-    # Ricerca vettoriale batch via indice in-memory
+    # Batch vector search via in-memory index
     top_ids = index.search(query_vec, agent_id, category=category, limit=limit)
     if not top_ids:
         return []
 
-    # Carica i record completi dal DB con cursor filter
+    # Load full records from DB with cursor filter
     id_score_map = {mem_id: score for mem_id, score in top_ids}
     placeholders = ",".join("?" for _ in top_ids)
 
@@ -909,7 +909,7 @@ def _semantic_search(
     params = [id for id, _ in top_ids]
 
     with get_connection() as conn:
-        # Costruisci query — ordine parametri: IN ids, category, cursor
+        # Build query — parameter order: IN ids, category, cursor
         category_clause = "AND category = ?" if category else ""
         if category:
             params.append(category)
@@ -947,22 +947,22 @@ def _semantic_search(
             score=round(sim, 4),
         ))
 
-    # Ordina per score decrescente
+    # Sort by descending score
     results.sort(key=lambda r: r.score or 0.0, reverse=True)
     return results
 
 
 def _sanitize_fts_query(query: str) -> str:
-    """Sanitizza query FTS5: rimuove operatori speciali, limita token."""
+    """Sanitize FTS5 query: remove special operators, limit token count."""
     special = set('"^():-*+<>&|')
     cleaned = "".join(c if c not in special else " " for c in query).strip()
     if not cleaned:
         return ""
-    # Max 10 token, min 2 caratteri ciascuno — previene DoS
+    # Max 10 tokens, min 2 characters each — prevents DoS
     tokens = [t for t in cleaned.split() if len(t) >= 2][:10]
     if not tokens:
         return ""
-    # Quote per match esatto, wildcard suffix per flessibilita
+    # Quote for exact match, wildcard suffix for flexibility
     return " OR ".join(f'"{t}"*' for t in tokens)
 
 
