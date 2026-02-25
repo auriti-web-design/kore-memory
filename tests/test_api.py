@@ -523,3 +523,247 @@ class TestPagination:
         r = client.get("/timeline?subject=PGNX&limit=2&offset=1", headers=HEADERS)
         assert r.status_code == 200
         assert r.json()["offset"] == 1
+
+
+# ── Archive (soft-delete) ─────────────────────────────────────────────────────
+
+class TestArchive:
+    """Verifica il workflow di archiviazione e ripristino memorie."""
+
+    def _save(self, content: str = "Memoria da archiviare per test archivio") -> int:
+        """Helper: salva una memoria e restituisce l'id."""
+        r = client.post("/save", json={"content": content, "category": "general", "importance": 3}, headers=HEADERS)
+        assert r.status_code == 201
+        return r.json()["id"]
+
+    def test_archive_memory(self):
+        """Archivia una memoria esistente — risposta 200 con success=True."""
+        mid = self._save()
+        r = client.post(f"/memories/{mid}/archive", headers=HEADERS)
+        assert r.status_code == 200
+        data = r.json()
+        assert data["success"] is True
+
+    def test_archive_not_found(self):
+        """Tentativo di archiviare una memoria inesistente — deve rispondere 404."""
+        r = client.post("/memories/999999999/archive", headers=HEADERS)
+        assert r.status_code == 404
+
+    def test_restore_memory(self):
+        """Archivia poi ripristina una memoria — risposta 200 con success=True."""
+        mid = self._save("Memoria archiviata e poi ripristinata nel test")
+        # Archivia
+        arch = client.post(f"/memories/{mid}/archive", headers=HEADERS)
+        assert arch.status_code == 200
+        # Ripristina
+        rest = client.post(f"/memories/{mid}/restore", headers=HEADERS)
+        assert rest.status_code == 200
+        assert rest.json()["success"] is True
+
+    def test_restore_not_archived(self):
+        """Tentativo di ripristinare una memoria non archiviata — deve rispondere 404."""
+        mid = self._save("Memoria attiva non archiviata da ripristinare")
+        # La memoria non è archiviata, il restore deve fallire
+        r = client.post(f"/memories/{mid}/restore", headers=HEADERS)
+        assert r.status_code == 404
+
+    def test_archived_not_in_search(self):
+        """Una memoria archiviata non deve apparire nei risultati di ricerca."""
+        contenuto = "Contenuto univoco archiviato ARCHTEST99"
+        mid = self._save(contenuto)
+        # Verifica che sia trovabile prima dell'archivio
+        r_before = client.get("/search?q=ARCHTEST99&semantic=false", headers=HEADERS)
+        ids_before = [m["id"] for m in r_before.json()["results"]]
+        assert mid in ids_before
+        # Archivia
+        client.post(f"/memories/{mid}/archive", headers=HEADERS)
+        # Dopo l'archivio non deve più comparire nella ricerca
+        r_after = client.get("/search?q=ARCHTEST99&semantic=false", headers=HEADERS)
+        ids_after = [m["id"] for m in r_after.json()["results"]]
+        assert mid not in ids_after
+
+    def test_archive_list(self):
+        """Una memoria archiviata deve comparire in GET /archive."""
+        mid = self._save("Memoria da listare nell archivio ARCHLIST01")
+        client.post(f"/memories/{mid}/archive", headers=HEADERS)
+        r = client.get("/archive", headers=HEADERS)
+        assert r.status_code == 200
+        ids = [m["id"] for m in r.json()["results"]]
+        assert mid in ids
+
+
+# ── Cursor-based pagination ───────────────────────────────────────────────────
+
+class TestCursorPagination:
+    """Verifica la paginazione basata su cursore opaco (base64)."""
+
+    # Marcatore univoco per isolare le memorie di questa classe
+    _MARKER = "CURSORPAGTEST"
+
+    def setup_method(self):
+        """Crea 5 memorie con marcatore univoco prima di ogni test."""
+        from kore_memory.main import _rate_buckets
+        _rate_buckets.clear()
+        for i in range(5):
+            client.post("/save", json={
+                "content": f"Memoria per cursor pagination numero {i} marker {self._MARKER}",
+                "category": "general",
+                "importance": 3,
+            }, headers=HEADERS)
+
+    def test_cursor_pagination_search(self):
+        """Ricerca con limit=2 poi usa il cursore — la seconda pagina deve avere risultati diversi."""
+        # Prima pagina
+        r1 = client.get(f"/search?q={self._MARKER}&limit=2&semantic=false", headers=HEADERS)
+        assert r1.status_code == 200
+        data1 = r1.json()
+        assert len(data1["results"]) == 2
+        cursor = data1.get("cursor")
+        # Se ci sono più risultati il cursore non deve essere None
+        assert cursor is not None
+
+        # Seconda pagina usando il cursore
+        r2 = client.get(f"/search?q={self._MARKER}&limit=2&cursor={cursor}&semantic=false", headers=HEADERS)
+        assert r2.status_code == 200
+        data2 = r2.json()
+        # Gli id della seconda pagina devono essere diversi da quelli della prima
+        ids1 = {m["id"] for m in data1["results"]}
+        ids2 = {m["id"] for m in data2["results"]}
+        assert ids1.isdisjoint(ids2), "Le pagine non devono contenere le stesse memorie"
+
+    def test_invalid_cursor(self):
+        """Un cursore non valido (stringa arbitraria non base64 decodificabile) deve rispondere 400."""
+        r = client.get("/search?q=test&cursor=NON_VALIDO_!!!&semantic=false", headers=HEADERS)
+        assert r.status_code == 400
+
+    def test_has_more_flag(self):
+        """Con 5 memorie e limit=2 has_more deve essere True; sull'ultima pagina False."""
+        # Prima pagina — deve avere has_more=True
+        r1 = client.get(f"/search?q={self._MARKER}&limit=2&semantic=false", headers=HEADERS)
+        assert r1.status_code == 200
+        assert r1.json()["has_more"] is True
+
+        # Scorri fino all'esaurimento dei risultati
+        cursor = r1.json().get("cursor")
+        last_has_more = True
+        iterations = 0
+        while cursor and iterations < 10:
+            rn = client.get(f"/search?q={self._MARKER}&limit=2&cursor={cursor}&semantic=false", headers=HEADERS)
+            assert rn.status_code == 200
+            last_has_more = rn.json()["has_more"]
+            cursor = rn.json().get("cursor")
+            iterations += 1
+
+        # L'ultima pagina deve avere has_more=False
+        assert last_has_more is False
+
+
+# ── Rate limiting ─────────────────────────────────────────────────────────────
+
+class TestRateLimit:
+    """Verifica che il rate limiter risponda 429 quando il limite viene superato."""
+
+    def setup_method(self):
+        """Resetta i bucket per garantire uno stato pulito prima di ogni test."""
+        from kore_memory.main import _rate_buckets
+        _rate_buckets.clear()
+
+    def test_rate_limit_exceeded(self):
+        """Supera il limite di /decay/run (5 req/ora) — la sesta deve restituire 429."""
+        # Il limite configurato è 5 richieste per ora
+        for _ in range(5):
+            r = client.post("/decay/run", headers=HEADERS)
+            assert r.status_code == 200
+        # La sesta richiesta deve essere rifiutata
+        r_exceeded = client.post("/decay/run", headers=HEADERS)
+        assert r_exceeded.status_code == 429
+
+    def test_rate_limit_different_paths(self):
+        """Path diversi hanno bucket di rate limit indipendenti."""
+        from kore_memory.main import _rate_buckets
+        _rate_buckets.clear()
+
+        # Esaurisci il limite di /decay/run (5 req/ora)
+        for _ in range(5):
+            client.post("/decay/run", headers=HEADERS)
+
+        # /cleanup ha un bucket separato (10 req/ora) — la prima chiamata deve riuscire
+        # anche se /decay/run è esaurito, perché i bucket sono per-path
+        r_cleanup = client.post("/cleanup", headers=HEADERS)
+        assert r_cleanup.status_code == 200, (
+            "Il rate limit di /cleanup deve essere indipendente da /decay/run"
+        )
+
+
+# ── Update memory — correttezza del campo importance ─────────────────────────
+
+class TestUpdateMemory:
+    """Verifica che PUT /memories/{id} restituisca il valore di importance reale dal DB."""
+
+    def _save_with_importance(self, importance: int) -> int:
+        """Helper: salva una memoria con importance esplicita e restituisce l'id."""
+        r = client.post("/save", json={
+            "content": "Memoria per test aggiornamento importance valore",
+            "category": "general",
+            "importance": importance,
+        }, headers=HEADERS)
+        assert r.status_code == 201
+        return r.json()["id"]
+
+    def test_update_returns_real_importance(self):
+        """Aggiorna solo il contenuto — la risposta deve contenere importance=3 (non 0)."""
+        mid = self._save_with_importance(3)
+        r = client.put(f"/memories/{mid}", json={
+            "content": "Contenuto aggiornato senza modificare importance",
+        }, headers=HEADERS)
+        assert r.status_code == 200
+        data = r.json()
+        # Il campo importance deve riflettere il valore salvato nel DB, non 0
+        assert data["importance"] == 3, (
+            f"importance atteso=3, ottenuto={data['importance']}. "
+            "L'endpoint non deve restituire 0 quando importance non è nel payload."
+        )
+
+    def test_update_importance_explicit(self):
+        """Aggiorna importance a 5 — la risposta deve confermare importance=5."""
+        mid = self._save_with_importance(2)
+        r = client.put(f"/memories/{mid}", json={
+            "importance": 5,
+        }, headers=HEADERS)
+        assert r.status_code == 200
+        assert r.json()["importance"] == 5
+
+
+# ── Auto-scoring importance ───────────────────────────────────────────────────
+
+class TestAutoScore:
+    """Verifica che importance=None attivi l'auto-scoring, mentre importance=1 esplicito venga rispettato."""
+
+    def test_save_without_importance_auto_scores(self):
+        """Senza campo importance il server deve assegnare un punteggio >= 1 automaticamente."""
+        # Contenuto neutro nella categoria "general" — baseline 1, auto-score atteso >= 1
+        r = client.post("/save", json={
+            "content": "Informazione generica senza importanza esplicita per test auto score",
+            "category": "general",
+        }, headers=HEADERS)
+        assert r.status_code == 201
+        data = r.json()
+        assert "importance" in data
+        # L'auto-scorer deve sempre restituire un valore valido nell'intervallo 1–5
+        assert 1 <= data["importance"] <= 5
+
+    def test_save_with_importance_1_explicit(self):
+        """Con importance=1 esplicito il server deve conservare 1, senza sovrascrivere con auto-score."""
+        r = client.post("/save", json={
+            # Contenuto che senza vincolo di importance potrebbe ricevere un punteggio più alto
+            "content": "Decisione importante urgente priorità massima progetto critico",
+            "category": "decision",
+            "importance": 1,
+        }, headers=HEADERS)
+        assert r.status_code == 201
+        data = r.json()
+        # importance=1 esplicito deve essere rispettato: l'auto-scorer non deve intervenire
+        assert data["importance"] == 1, (
+            f"importance atteso=1 (esplicito), ottenuto={data['importance']}. "
+            "Un importance esplicito non deve essere sovrascritto dall'auto-scorer."
+        )
