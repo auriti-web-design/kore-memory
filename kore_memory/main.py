@@ -22,12 +22,18 @@ from .auth import get_agent_id, require_auth
 from .dashboard import get_dashboard_html
 from .database import init_db
 from .models import (
+    AgentListResponse,
+    AgentRecord,
+    ArchiveResponse,
+    AuditResponse,
     AutoTuneResponse,
     BatchSaveRequest,
     BatchSaveResponse,
     CleanupExpiredResponse,
     CompressRunResponse,
     DecayRunResponse,
+    EntityListResponse,
+    EntityRecord,
     MemoryExportResponse,
     MemoryImportRequest,
     MemoryImportResponse,
@@ -39,6 +45,8 @@ from .models import (
     RelationResponse,
     ScoringStatsResponse,
     SessionCreateRequest,
+    SessionDeleteResponse,
+    SessionResponse,
     SessionSummaryResponse,
     TagRequest,
     TagResponse,
@@ -77,11 +85,29 @@ _rate_lock = _rl_threading.Lock()
 _rate_last_cleanup = 0.0
 
 
+import re as _re
+_SESSION_ID_RE = _re.compile(r'^[a-zA-Z0-9_\-\.]{1,128}$')
+
+
+def _validate_session_id(raw: str | None) -> str | None:
+    """Valida e sanitizza X-Session-Id header. None se assente o invalido."""
+    if not raw:
+        return None
+    raw = raw.strip()
+    if not _SESSION_ID_RE.match(raw):
+        raise HTTPException(status_code=400, detail="X-Session-Id contiene caratteri non validi")
+    return raw
+
+
 def _get_client_ip(request: Request) -> str:
-    """Extract client IP, respecting X-Forwarded-For behind trusted proxies."""
+    """Estrae IP client. Ignora X-Forwarded-For in local-only mode per evitare spoofing."""
+    # In local-only mode, usa solo l'IP diretto del socket — previene
+    # spoofing via X-Forwarded-For: 127.0.0.1 per bypassare auth/rate-limit
+    if config.LOCAL_ONLY:
+        return request.client.host if request.client else "unknown"
+    # Dietro reverse proxy fidato, leggi il primo IP dalla catena
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
-        # First IP in the chain is the original client
         return forwarded.split(",")[0].strip()
     real_ip = request.headers.get("X-Real-IP")
     if real_ip:
@@ -143,7 +169,7 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
-        response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["X-XSS-Protection"] = "0"
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
         # CSP with nonce for the dashboard, restrictive for APIs
         if request.url.path == "/dashboard":
@@ -166,6 +192,9 @@ async def lifespan(app: FastAPI):
         from .audit import register_audit_handler
         register_audit_handler()
     yield
+    # Graceful shutdown: chiudi il pool di connessioni SQLite
+    from .database import _pool
+    _pool.clear()
 
 
 app = FastAPI(
@@ -215,7 +244,7 @@ def save(
     """Save a memory scoped to the requesting agent. Importance is auto-scored if omitted.
     Use X-Session-Id header to associate the memory with a conversation session."""
     _check_rate_limit(_get_client_ip(request), "/save")
-    session_id = request.headers.get("X-Session-Id")
+    session_id = _validate_session_id(request.headers.get("X-Session-Id"))
     memory_id, importance = save_memory(req, agent_id=agent_id, session_id=session_id)
     return MemorySaveResponse(id=memory_id, importance=importance)
 
@@ -343,7 +372,15 @@ def update(
     """Update a memory's content, category, or importance. Agents can only update their own memories."""
     if not update_memory(memory_id, req, agent_id=agent_id):
         raise HTTPException(status_code=404, detail="Memory not found")
-    return MemorySaveResponse(id=memory_id, importance=req.importance or 0, message="Memory updated")
+    # Recupera importance reale dal DB (req.importance potrebbe essere None)
+    from .database import get_connection
+    with get_connection() as conn:
+        row = conn.execute(
+            "SELECT importance FROM memories WHERE id = ? AND agent_id = ?",
+            (memory_id, agent_id),
+        ).fetchone()
+    real_importance = row["importance"] if row else 1
+    return MemorySaveResponse(id=memory_id, importance=real_importance, message="Memory updated")
 
 
 @app.delete("/memories/{memory_id}", status_code=204)
@@ -523,18 +560,18 @@ def import_data(
 
 # ── Archive endpoints ──────────────────────────────────────────────────────
 
-@app.post("/memories/{memory_id}/archive", status_code=200)
-def archive(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> dict:
+@app.post("/memories/{memory_id}/archive", response_model=ArchiveResponse, status_code=200)
+def archive(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> ArchiveResponse:
     if not archive_memory(memory_id, agent_id=agent_id):
         raise HTTPException(404, "Memory not found or already archived")
-    return {"success": True, "message": "Memory archived"}
+    return ArchiveResponse(success=True, message="Memory archived")
 
 
-@app.post("/memories/{memory_id}/restore", status_code=200)
-def restore(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> dict:
+@app.post("/memories/{memory_id}/restore", response_model=ArchiveResponse, status_code=200)
+def restore(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> ArchiveResponse:
     if not restore_memory(memory_id, agent_id=agent_id):
         raise HTTPException(404, "Memory not found or not archived")
-    return {"success": True, "message": "Memory restored"}
+    return ArchiveResponse(success=True, message="Memory restored")
 
 
 @app.get("/archive", response_model=MemorySearchResponse)
@@ -545,27 +582,28 @@ def archive_list(limit: int = Query(50, ge=1, le=100), _: str = _Auth, agent_id:
 
 # ── Session endpoints ─────────────────────────────────────────────────────────
 
-@app.post("/sessions", status_code=201)
+@app.post("/sessions", response_model=SessionResponse, status_code=201)
 def session_create(
     req: SessionCreateRequest,
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> dict:
+) -> SessionResponse:
     """Create a new conversation session."""
     result = create_session(req.session_id, agent_id=agent_id, title=req.title)
     if not result:
         raise HTTPException(400, "Failed to create session")
-    return result
+    return SessionResponse(**result, memory_count=0)
 
 
-@app.get("/sessions")
+@app.get("/sessions", response_model=list[SessionResponse])
 def sessions_list(
     limit: int = Query(50, ge=1, le=200),
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> list[dict]:
+) -> list[SessionResponse]:
     """List all sessions for the requesting agent."""
-    return list_sessions(agent_id=agent_id, limit=limit)
+    rows = list_sessions(agent_id=agent_id, limit=limit)
+    return [SessionResponse(**r) for r in rows]
 
 
 @app.get("/sessions/{session_id}/memories", response_model=MemorySearchResponse)
@@ -592,56 +630,63 @@ def session_summary(
     return SessionSummaryResponse(**summary)
 
 
-@app.post("/sessions/{session_id}/end")
+@app.post("/sessions/{session_id}/end", response_model=ArchiveResponse)
 def session_end(
     session_id: str,
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> dict:
+) -> ArchiveResponse:
     """Mark a session as ended."""
     if not end_session(session_id, agent_id=agent_id):
         raise HTTPException(404, "Session not found or already ended")
-    return {"success": True, "message": "Session ended"}
+    return ArchiveResponse(success=True, message="Session ended")
 
 
-@app.delete("/sessions/{session_id}", status_code=200)
+@app.delete("/sessions/{session_id}", response_model=SessionDeleteResponse, status_code=200)
 def session_delete(
     session_id: str,
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> dict:
+) -> SessionDeleteResponse:
     """Delete a session. Memories are unlinked but not deleted."""
     unlinked = delete_session(session_id, agent_id=agent_id)
-    return {"success": True, "unlinked_memories": unlinked}
+    return SessionDeleteResponse(success=True, unlinked_memories=unlinked)
 
 
 # ── Entity extraction ─────────────────────────────────────────────────────────
 
-@app.get("/entities")
+@app.get("/entities", response_model=EntityListResponse)
 def entities_list(
     type: str | None = Query(None, description="Filter by entity type (person, org, email, url, date, money, location, product)"),
     limit: int = Query(50, ge=1, le=200),
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> dict:
+) -> EntityListResponse:
     """List extracted entities from memory tags. Requires KORE_ENTITY_EXTRACTION=1."""
     from .integrations.entities import search_entities
     results = search_entities(agent_id, entity_type=type, limit=limit)
-    return {"entities": results, "total": len(results)}
+    return EntityListResponse(
+        entities=[EntityRecord(**r) for r in results],
+        total=len(results),
+    )
 
 
 # ── Agents ────────────────────────────────────────────────────────────────────
 
-@app.get("/agents")
-def agents_list(_: str = _Auth) -> list[dict]:
+@app.get("/agents", response_model=AgentListResponse)
+def agents_list(_: str = _Auth) -> AgentListResponse:
     """List all agent IDs with memory count and last activity. No agent scoping — returns all agents."""
-    return list_agents()
+    rows = list_agents()
+    return AgentListResponse(
+        agents=[AgentRecord(**r) for r in rows],
+        total=len(rows),
+    )
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 @app.get("/metrics", include_in_schema=False)
-def metrics(agent_id: str | None = Query(None)) -> Response:
+def metrics(_: str = _Auth, agent_id: str = _Agent) -> Response:
     """Prometheus-compatible metrics endpoint."""
     from .repository import get_stats
     stats = get_stats(agent_id)
@@ -664,7 +709,7 @@ def metrics(agent_id: str | None = Query(None)) -> Response:
 
 # ── Audit log ────────────────────────────────────────────────────────────────
 
-@app.get("/audit")
+@app.get("/audit", response_model=AuditResponse)
 def audit_log(
     request: Request,
     event: str | None = Query(None),
@@ -672,11 +717,23 @@ def audit_log(
     since: str | None = Query(None, description="ISO datetime"),
     _: str = _Auth,
     agent_id: str = _Agent,
-) -> dict:
+) -> AuditResponse:
     """Query the audit event log for the requesting agent."""
     from .audit import query_audit_log
     entries = query_audit_log(agent_id, event_type=event, limit=limit, since=since)
-    return {"events": entries, "total": len(entries)}
+    return AuditResponse(events=entries, total=len(entries))
+
+
+# ── Favicon ───────────────────────────────────────────────────────────────────
+
+@app.get("/favicon.svg", include_in_schema=False)
+async def favicon():
+    """Serve la favicon SVG."""
+    from pathlib import Path
+    svg_path = Path(__file__).parent.parent / "assets" / "favicon.svg"
+    if svg_path.exists():
+        return Response(content=svg_path.read_text(), media_type="image/svg+xml")
+    return Response(status_code=404)
 
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -686,10 +743,9 @@ async def dashboard(request: Request) -> HTMLResponse:
     """Dashboard web per gestione memorie. Richiede auth se non in local-only mode."""
     from .auth import _is_local, _local_only_mode
     if not (_local_only_mode() and _is_local(request)):
-        # Non-local: richiede autenticazione
         await require_auth(request, request.headers.get("X-Kore-Key"))
     html = get_dashboard_html()
-    # Inject CSP nonce into script tags
+    # Inject CSP nonce
     nonce = getattr(request.state, "csp_nonce", "")
     html = html.replace("<script>", f'<script nonce="{nonce}">')
     return HTMLResponse(content=html)
@@ -700,8 +756,18 @@ async def dashboard(request: Request) -> HTMLResponse:
 @app.get("/health")
 def health() -> JSONResponse:
     from .repository import _embeddings_available
+    from .database import get_connection
+    # Verifica connettivita' DB
+    db_ok = True
+    try:
+        with get_connection() as conn:
+            conn.execute("SELECT 1").fetchone()
+    except Exception:
+        db_ok = False
+    status = "ok" if db_ok else "degraded"
     return JSONResponse({
-        "status": "ok",
+        "status": status,
         "version": app.version,
         "semantic_search": _embeddings_available(),
+        "database": "connected" if db_ok else "error",
     })

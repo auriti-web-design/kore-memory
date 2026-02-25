@@ -46,7 +46,11 @@ class _ConnectionPool:
         except Empty:
             pass
         except Exception:
-            pass
+            # Connessione corrotta — chiudi per evitare fd leak
+            try:
+                conn.close()
+            except Exception:
+                pass
         # Crea nuova connessione
         conn = sqlite3.connect(db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
@@ -100,6 +104,8 @@ def init_db() -> None:
                 compressed_into INTEGER DEFAULT NULL REFERENCES memories(id),
                 embedding       TEXT    DEFAULT NULL,
                 expires_at      TEXT    DEFAULT NULL,
+                archived_at     TEXT    DEFAULT NULL,
+                session_id      TEXT    DEFAULT NULL,
                 created_at      TEXT    NOT NULL DEFAULT (datetime('now')),
                 updated_at      TEXT    NOT NULL DEFAULT (datetime('now'))
             );
@@ -112,6 +118,7 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories (importance DESC);
             CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories (created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_memories_expires ON memories (expires_at) WHERE expires_at IS NOT NULL;
+            CREATE INDEX IF NOT EXISTS idx_memories_archived ON memories (archived_at) WHERE archived_at IS NOT NULL;
 
             CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts
             USING fts5(content, category, content='memories', content_rowid='id', tokenize='unicode61');

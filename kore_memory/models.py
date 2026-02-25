@@ -23,7 +23,7 @@ Category = Literal[
 class MemorySaveRequest(BaseModel):
     content: str = Field(..., min_length=3, max_length=4000)
     category: Category = Field("general")
-    importance: int = Field(1, ge=1, le=5, description="1=auto-scored, 2-5=explicit")
+    importance: int | None = Field(None, ge=1, le=5, description="None=auto-scored, 1-5=explicit")
     ttl_hours: int | None = Field(None, ge=1, le=8760, description="Time-to-live in ore (max 1 anno)")
 
     @field_validator("content")
@@ -177,3 +177,45 @@ class SessionSummaryResponse(BaseModel):
     avg_importance: float = 0.0
     first_memory: str | None = None
     last_memory: str | None = None
+
+
+class SessionDeleteResponse(BaseModel):
+    success: bool
+    unlinked_memories: int
+
+
+class EntityRecord(BaseModel):
+    type: str
+    value: str
+    memory_id: int
+    tag: str
+
+
+class EntityListResponse(BaseModel):
+    entities: list[EntityRecord]
+    total: int
+
+
+class AgentRecord(BaseModel):
+    agent_id: str
+    memory_count: int
+    last_active: str | None = None
+
+
+class AgentListResponse(BaseModel):
+    agents: list[AgentRecord]
+    total: int
+
+
+class AuditEventRecord(BaseModel):
+    id: int
+    event: str
+    agent_id: str
+    memory_id: int | None = None
+    data: dict | str | None = None
+    created_at: str
+
+
+class AuditResponse(BaseModel):
+    events: list[AuditEventRecord]
+    total: int
