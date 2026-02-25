@@ -25,6 +25,7 @@ def _embeddings_available() -> bool:
     if _EMBEDDINGS_AVAILABLE is None:
         try:
             import sentence_transformers  # noqa: F401
+
             _EMBEDDINGS_AVAILABLE = True
         except ImportError:
             _EMBEDDINGS_AVAILABLE = False
@@ -44,6 +45,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: s
     embedding_blob = None
     if _embeddings_available():
         from .embedder import embed, serialize
+
         try:
             embedding_blob = serialize(embed(req.content))
         except Exception:
@@ -83,14 +85,17 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: s
     # Invalidate vector cache for the agent
     if embedding_blob:
         from .vector_index import get_index
+
         get_index().invalidate(agent_id)
 
     emit(MEMORY_SAVED, {"id": row_id, "agent_id": agent_id})
 
     # Entity extraction (optional, enabled via KORE_ENTITY_EXTRACTION=1)
     from . import config as _cfg
+
     if _cfg.ENTITY_EXTRACTION:
         from .integrations.entities import auto_tag_entities
+
         try:
             auto_tag_entities(row_id, req.content, agent_id)
         except Exception:
@@ -119,6 +124,7 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
     embeddings: list[str | None] = [None] * len(reqs)
     if _embeddings_available():
         from .embedder import embed_batch, serialize
+
         try:
             vectors = embed_batch([req.content for req in reqs])
             embeddings = [serialize(v) for v in vectors]
@@ -154,6 +160,7 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
     # Invalidate vector cache only once
     if any(e is not None for e in embeddings):
         from .vector_index import get_index
+
         get_index().invalidate(agent_id)
 
     return results
@@ -195,7 +202,7 @@ def search_memories(
     total_count = _count_active_memories(query, category, agent_id)
 
     # Take requested page + 1 to check if there are more results
-    page = alive[:limit + 1]
+    page = alive[: limit + 1]
     has_more = len(page) > limit
     top = page[:limit]
 
@@ -235,6 +242,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
             # Regenerate embedding if content changes
             if _embeddings_available():
                 from .embedder import embed, serialize
+
                 try:
                     embedding_blob = serialize(embed(req.content))
                     updates.append("embedding = ?")
@@ -266,6 +274,7 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
     # Invalidate vector cache
     if req.content is not None:
         from .vector_index import get_index
+
         get_index().invalidate(agent_id)
 
     emit(MEMORY_UPDATED, {"id": memory_id, "agent_id": agent_id})
@@ -283,6 +292,7 @@ def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
 
     if deleted:
         from .vector_index import get_index
+
         get_index().invalidate(agent_id)
         emit(MEMORY_DELETED, {"id": memory_id, "agent_id": agent_id})
 
@@ -320,7 +330,10 @@ def run_decay_pass(agent_id: str | None = None) -> int:
 
 def _run_decay_pass_inner(agent_id: str | None = None) -> int:
     with get_connection() as conn:
-        sql = "SELECT id, importance, created_at, last_accessed, access_count FROM memories WHERE compressed_into IS NULL AND archived_at IS NULL"
+        sql = (
+            "SELECT id, importance, created_at, last_accessed, access_count"
+            " FROM memories WHERE compressed_into IS NULL AND archived_at IS NULL"
+        )
         params: list = []
         if agent_id:
             sql += " AND agent_id = ?"
@@ -369,7 +382,7 @@ def get_timeline(
     sorted_results = sorted(results, key=lambda r: r.created_at)
 
     # Paginate
-    page = sorted_results[:limit + 1]
+    page = sorted_results[: limit + 1]
     has_more = len(page) > limit
     top = page[:limit]
 
@@ -427,6 +440,7 @@ def import_memories(records: list[dict], agent_id: str = "default") -> int:
 
 # ── Tag ──────────────────────────────────────────────────────────────────────
 
+
 def add_tags(memory_id: int, tags: list[str], agent_id: str = "default") -> int:
     """Add tags to a memory. Returns the number of tags added."""
     # Verify that the memory belongs to the agent
@@ -482,7 +496,7 @@ def get_tags(memory_id: int, agent_id: str = "default") -> list[str]:
         # JOIN with memories to verify ownership
         rows = conn.execute(
             """
-            SELECT mt.tag 
+            SELECT mt.tag
             FROM memory_tags mt
             JOIN memories m ON mt.memory_id = m.id
             WHERE mt.memory_id = ? AND m.agent_id = ?
@@ -515,9 +529,8 @@ def search_by_tag(tag: str, agent_id: str = "default", limit: int = 20) -> list[
 
 # ── Relations ────────────────────────────────────────────────────────────────
 
-def add_relation(
-    source_id: int, target_id: int, relation: str = "related", agent_id: str = "default"
-) -> bool:
+
+def add_relation(source_id: int, target_id: int, relation: str = "related", agent_id: str = "default") -> bool:
     """Create a relation between two memories. Both must belong to the agent."""
     with get_connection() as conn:
         # Verify that both memories belong to the agent
@@ -560,6 +573,7 @@ def get_relations(memory_id: int, agent_id: str = "default") -> list[dict]:
 
 # ── Archive (soft-delete) ─────────────────────────────────────────────────────
 
+
 def archive_memory(memory_id: int, agent_id: str = "default") -> bool:
     """Archive a memory (soft-delete). Returns True if archived."""
     with get_connection() as conn:
@@ -594,6 +608,7 @@ def get_archived(agent_id: str = "default", limit: int = 50) -> list[MemoryRecor
 
 
 # ── Sessions ─────────────────────────────────────────────────────────────────
+
 
 def create_session(session_id: str, agent_id: str = "default", title: str | None = None) -> dict:
     """Create a new conversation session."""
@@ -706,6 +721,7 @@ def get_session_summary(session_id: str, agent_id: str = "default") -> dict:
 
 # ── Agents ───────────────────────────────────────────────────────────────────
 
+
 def list_agents() -> list[dict]:
     """Return all distinct agent_ids with memory count and last activity."""
     with get_connection() as conn:
@@ -725,21 +741,37 @@ def list_agents() -> list[dict]:
 
 # ── Stats / Metrics ──────────────────────────────────────────────────────────
 
+
 def get_stats(agent_id: str | None = None) -> dict:
     """Get database statistics for monitoring."""
     with get_connection() as conn:
         if agent_id:
-            total = conn.execute("SELECT COUNT(*) FROM memories WHERE agent_id = ? AND compressed_into IS NULL", (agent_id,)).fetchone()[0]
-            active = conn.execute("SELECT COUNT(*) FROM memories WHERE agent_id = ? AND compressed_into IS NULL AND decay_score >= 0.05", (agent_id,)).fetchone()[0]
+            total = conn.execute(
+                "SELECT COUNT(*) FROM memories WHERE agent_id = ? AND compressed_into IS NULL",
+                (agent_id,),
+            ).fetchone()[0]
+            active = conn.execute(
+                "SELECT COUNT(*) FROM memories WHERE agent_id = ? AND compressed_into IS NULL AND decay_score >= 0.05",
+                (agent_id,),
+            ).fetchone()[0]
             try:
-                archived = conn.execute("SELECT COUNT(*) FROM memories WHERE agent_id = ? AND archived_at IS NOT NULL", (agent_id,)).fetchone()[0]
+                archived = conn.execute(
+                    "SELECT COUNT(*) FROM memories WHERE agent_id = ? AND archived_at IS NOT NULL",
+                    (agent_id,),
+                ).fetchone()[0]
             except Exception:
                 archived = 0
         else:
-            total = conn.execute("SELECT COUNT(*) FROM memories WHERE compressed_into IS NULL").fetchone()[0]
-            active = conn.execute("SELECT COUNT(*) FROM memories WHERE compressed_into IS NULL AND decay_score >= 0.05").fetchone()[0]
+            total = conn.execute(
+                "SELECT COUNT(*) FROM memories WHERE compressed_into IS NULL",
+            ).fetchone()[0]
+            active = conn.execute(
+                "SELECT COUNT(*) FROM memories WHERE compressed_into IS NULL AND decay_score >= 0.05",
+            ).fetchone()[0]
             try:
-                archived = conn.execute("SELECT COUNT(*) FROM memories WHERE archived_at IS NOT NULL").fetchone()[0]
+                archived = conn.execute(
+                    "SELECT COUNT(*) FROM memories WHERE archived_at IS NOT NULL",
+                ).fetchone()[0]
             except Exception:
                 archived = 0
 
@@ -750,6 +782,7 @@ def get_stats(agent_id: str | None = None) -> dict:
 
 
 # ── Private helpers ──────────────────────────────────────────────────────────
+
 
 def _count_active_memories(query: str, category: str | None, agent_id: str) -> int:
     """Count total active memories matching query (for pagination total)."""
@@ -818,8 +851,11 @@ def _fts_search(
         cursor_filter = ""
         if cursor:
             decay_score, last_id = cursor
-            cursor_filter = "AND ((m.decay_score, m.id) < (:cursor_score, :cursor_id))" if safe_query else \
-                           "AND ((decay_score, id) < (:cursor_score, :cursor_id))"
+            cursor_filter = (
+                "AND ((m.decay_score, m.id) < (:cursor_score, :cursor_id))"
+                if safe_query
+                else "AND ((decay_score, id) < (:cursor_score, :cursor_id))"
+            )
 
         if safe_query:
             sql = """
@@ -867,17 +903,12 @@ def _fts_search(
             params["cursor_id"] = cursor[1]
 
         category_filter = (
-            "AND m.category = :category" if safe_query and category
-            else "AND category = :category" if category
-            else ""
+            "AND m.category = :category" if safe_query and category else "AND category = :category" if category else ""
         )
         if category:
             params["category"] = category
 
-        rows = conn.execute(
-            sql.format(category_filter=category_filter, cursor_filter=cursor_filter),
-            params
-        ).fetchall()
+        rows = conn.execute(sql.format(category_filter=category_filter, cursor_filter=cursor_filter), params).fetchall()
 
     return [_row_to_record(r) for r in rows]
 
@@ -936,16 +967,18 @@ def _semantic_search(
     results = []
     for row in rows:
         sim = id_score_map.get(row["id"], 0.0)
-        results.append(MemoryRecord(
-            id=row["id"],
-            content=row["content"],
-            category=row["category"],
-            importance=row["importance"],
-            decay_score=row["decay_score"],
-            created_at=row["created_at"],
-            updated_at=row["updated_at"],
-            score=round(sim, 4),
-        ))
+        results.append(
+            MemoryRecord(
+                id=row["id"],
+                content=row["content"],
+                category=row["category"],
+                importance=row["importance"],
+                decay_score=row["decay_score"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+                score=round(sim, 4),
+            )
+        )
 
     # Sort by descending score
     results.sort(key=lambda r: r.score or 0.0, reverse=True)

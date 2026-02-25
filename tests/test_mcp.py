@@ -5,9 +5,12 @@ Each tool is a plain Python function that calls repository layer.
 
 Setup: temp DB + local-only mode, same pattern as test_api.py.
 Must set env vars BEFORE importing mcp_server (it calls init_db at import time).
+Requires optional [mcp] dependency — skipped if not installed.
 """
 
 import pytest
+
+pytest.importorskip("mcp", reason="mcp package not installed (optional dependency)")
 
 from kore_memory.mcp_server import (  # noqa: E402
     memory_add_relation,

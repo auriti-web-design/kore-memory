@@ -26,6 +26,7 @@ SIMILARITY_THRESHOLD = config.SIMILARITY_THRESHOLD
 # --- numpy availability (optional, installed with [semantic]) ---
 try:
     import numpy as np
+
     _HAS_NUMPY = True
 except ImportError:
     np = None  # type: ignore[assignment]
@@ -175,7 +176,7 @@ def _find_clusters_python(
         cluster = [mem_a]
 
         # Compare only with subsequent memories (avoids double comparisons)
-        for mem_b in memories[i + 1:]:
+        for mem_b in memories[i + 1 :]:
             if mem_b["id"] in used:
                 continue
             if cosine_similarity(vec_a, vectors[mem_b["id"]]) >= SIMILARITY_THRESHOLD:
@@ -202,7 +203,7 @@ def _merge_cluster(cluster: list[dict], agent_id: str = "default") -> int | None
     combined_parts = []
     seen = set()
     for mem in cluster:
-        sentences = re.split(r'(?<=[.!?])\s+', mem["content"].strip())
+        sentences = re.split(r"(?<=[.!?])\s+", mem["content"].strip())
         for s in sentences:
             s = s.strip()
             if s and s not in seen:

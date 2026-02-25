@@ -74,31 +74,27 @@ def spacy_available() -> bool:
 # ── Regex-based fallback extractors ──────────────────────────────────────────
 
 # Email: standard RFC-ish pattern
-_EMAIL_RE = re.compile(
-    r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b"
-)
+_EMAIL_RE = re.compile(r"\b[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}\b")
 
 # URL: http/https URLs
-_URL_RE = re.compile(
-    r"https?://[a-zA-Z0-9._~:/?#\[\]@!$&'()*+,;=%-]+"
-)
+_URL_RE = re.compile(r"https?://[a-zA-Z0-9._~:/?#\[\]@!$&'()*+,;=%-]+")
 
 # Date: common formats (YYYY-MM-DD, DD/MM/YYYY, MM/DD/YYYY, Month DD YYYY, etc.)
 _DATE_RE = re.compile(
-    r"\b\d{4}-\d{2}-\d{2}\b"           # 2024-01-15
-    r"|\b\d{1,2}/\d{1,2}/\d{2,4}\b"    # 01/15/2024 or 15/01/24
+    r"\b\d{4}-\d{2}-\d{2}\b"  # 2024-01-15
+    r"|\b\d{1,2}/\d{1,2}/\d{2,4}\b"  # 01/15/2024 or 15/01/24
     r"|\b(?:January|February|March|April|May|June|July|August|September|October|November|December)"
-    r"\s+\d{1,2},?\s*\d{4}\b"          # January 15, 2024
+    r"\s+\d{1,2},?\s*\d{4}\b"  # January 15, 2024
     r"|\b\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)"
-    r"\s+\d{4}\b",                      # 15 January 2024
+    r"\s+\d{4}\b",  # 15 January 2024
     re.IGNORECASE,
 )
 
 # Money: currency values ($100, EUR 50.00, 1,000.50 USD, etc.)
 _MONEY_RE = re.compile(
-    r"[$\u20ac\u00a3\u00a5]\s*[\d,]+(?:\.\d{1,2})?"       # $100, EUR50.00
+    r"[$\u20ac\u00a3\u00a5]\s*[\d,]+(?:\.\d{1,2})?"  # $100, EUR50.00
     r"|[\d,]+(?:\.\d{1,2})?\s*(?:USD|EUR|GBP|JPY|CHF|BTC|ETH)\b"  # 100 USD
-    r"|(?:USD|EUR|GBP|JPY|CHF)\s*[\d,]+(?:\.\d{1,2})?",   # USD 100
+    r"|(?:USD|EUR|GBP|JPY|CHF)\s*[\d,]+(?:\.\d{1,2})?",  # USD 100
     re.IGNORECASE,
 )
 
@@ -165,6 +161,7 @@ def _extract_spacy(text: str) -> list[dict[str, str]]:
 
 
 # ── Public API ────────────────────────────────────────────────────────────────
+
 
 def extract_entities(text: str) -> list[dict[str, str]]:
     """
@@ -267,10 +264,7 @@ def search_entities(
     """
     from ..database import get_connection
 
-    if entity_type:
-        pattern = f"entity:{entity_type.lower()}:%"
-    else:
-        pattern = "entity:%"
+    pattern = f"entity:{entity_type.lower()}:%" if entity_type else "entity:%"
 
     with get_connection() as conn:
         rows = conn.execute(
@@ -293,11 +287,13 @@ def search_entities(
         tag = row["tag"]
         parts = tag.split(":", 2)
         if len(parts) == 3:
-            results.append({
-                "type": parts[1],
-                "value": parts[2],
-                "memory_id": row["memory_id"],
-                "tag": tag,
-            })
+            results.append(
+                {
+                    "type": parts[1],
+                    "value": parts[2],
+                    "memory_id": row["memory_id"],
+                    "tag": tag,
+                }
+            )
 
     return results

@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 # --- numpy availability (optional, installed with [semantic]) ---
 try:
     import numpy as np
+
     _HAS_NUMPY = True
 except ImportError:
     np = None  # type: ignore[assignment]
@@ -26,6 +27,7 @@ except ImportError:
 @dataclass
 class _AgentCache:
     """Cache vettoriale per un singolo agente."""
+
     vectors: dict[int, list[float]] = field(default_factory=dict)
     dirty: bool = True  # forza ricaricamento al primo accesso
 
@@ -95,9 +97,7 @@ class VectorIndex:
             similarities = matrix @ query_arr  # shape: (n,)
 
             scored: list[tuple[int, float]] = [
-                (mem_ids[i], float(similarities[i]))
-                for i in range(len(mem_ids))
-                if similarities[i] >= min_similarity
+                (mem_ids[i], float(similarities[i])) for i in range(len(mem_ids)) if similarities[i] >= min_similarity
             ]
         else:
             # Pure Python fallback

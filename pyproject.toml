@@ -83,10 +83,16 @@ line-length = 120
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "SIM", "S"]
 ignore = [
-    "S101",    # assert — usato nei test
-    "S603",    # subprocess — non applicabile
-    "S607",    # partial path — non applicabile
+    "S101",    # assert — used in tests
+    "S603",    # subprocess — not applicable
+    "S607",    # partial path — not applicable
+    "S608",    # SQL injection — false positive, all queries use parameterized placeholders
+    "S110",    # try-except-pass — intentional error suppression (connection cleanup)
+    "S112",    # try-except-continue — intentional skip of corrupted data
     "B008",    # function call in default arg — Depends() pattern FastAPI
+    "B905",    # zip without strict — not needed for numeric vectors
+    "SIM105",  # contextlib.suppress — explicit try-except is clearer
+    "SIM118",  # key in dict — readability preference
 ]
 
 [tool.ruff.lint.per-file-ignores]

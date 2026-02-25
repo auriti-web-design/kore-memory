@@ -9,38 +9,76 @@ Scoring factors:
   4. Uniqueness           — if similar memories exist with high importance, inherit it
 """
 
-
 # Keywords that signal high importance
 HIGH_IMPORTANCE_KEYWORDS = {
     5: [
-        "password", "token", "chiave", "secret", "api key", "credenziali",
-        "urgente", "critico", "never", "mai", "sempre", "always",
-        "private key", "segreto",
+        "password",
+        "token",
+        "chiave",
+        "secret",
+        "api key",
+        "credenziali",
+        "urgente",
+        "critico",
+        "never",
+        "mai",
+        "sempre",
+        "always",
+        "private key",
+        "segreto",
     ],
     4: [
-        "decisione", "decision", "importante", "important", "priorità", "priority",
-        "deadline", "scadenza", "pagamento", "payment", "debito", "debt",
-        "errore critico", "bug critico", "non fare", "do not", "regola",
+        "decisione",
+        "decision",
+        "importante",
+        "important",
+        "priorità",
+        "priority",
+        "deadline",
+        "scadenza",
+        "pagamento",
+        "payment",
+        "debito",
+        "debt",
+        "errore critico",
+        "bug critico",
+        "non fare",
+        "do not",
+        "regola",
     ],
     3: [
-        "progetto", "project", "strategia", "strategy", "obiettivo", "goal",
-        "configurazione", "config", "server", "deploy", "produzione",
+        "progetto",
+        "project",
+        "strategia",
+        "strategy",
+        "obiettivo",
+        "goal",
+        "configurazione",
+        "config",
+        "server",
+        "deploy",
+        "produzione",
     ],
     2: [
-        "nota", "note", "reminder", "appunto", "considerare", "consider",
+        "nota",
+        "note",
+        "reminder",
+        "appunto",
+        "considerare",
+        "consider",
     ],
 }
 
 # Category importance baselines
 CATEGORY_BASELINE: dict[str, int] = {
-    "general":    1,
+    "general": 1,
     "preference": 4,
-    "decision":   4,
-    "finance":    3,
-    "trading":    3,
-    "project":    3,
-    "task":       2,
-    "person":     2,
+    "decision": 4,
+    "finance": 3,
+    "trading": 3,
+    "project": 3,
+    "task": 2,
+    "person": 2,
 }
 
 

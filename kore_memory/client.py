@@ -198,11 +198,14 @@ class KoreClient:
         offset: int = 0,
     ) -> MemorySearchResponse:
         """Returns the memory timeline for a subject (oldest to newest)."""
-        r = self._client.get("/timeline", params={
-            "subject": subject,
-            "limit": limit,
-            "offset": offset,
-        })
+        r = self._client.get(
+            "/timeline",
+            params={
+                "subject": subject,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
 
@@ -249,10 +252,13 @@ class KoreClient:
         relation: str = "related",
     ) -> RelationResponse:
         """Creates a relation between two memories."""
-        r = self._client.post(f"/memories/{memory_id}/relations", json={
-            "target_id": target_id,
-            "relation": relation,
-        })
+        r = self._client.post(
+            f"/memories/{memory_id}/relations",
+            json={
+                "target_id": target_id,
+                "relation": relation,
+            },
+        )
         _raise_for_status(r)
         return RelationResponse(**r.json())
 
@@ -402,11 +408,14 @@ class AsyncKoreClient:
         offset: int = 0,
     ) -> MemorySearchResponse:
         """Returns the memory timeline for a subject (oldest to newest)."""
-        r = await self._client.get("/timeline", params={
-            "subject": subject,
-            "limit": limit,
-            "offset": offset,
-        })
+        r = await self._client.get(
+            "/timeline",
+            params={
+                "subject": subject,
+                "limit": limit,
+                "offset": offset,
+            },
+        )
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
 
@@ -453,10 +462,13 @@ class AsyncKoreClient:
         relation: str = "related",
     ) -> RelationResponse:
         """Creates a relation between two memories."""
-        r = await self._client.post(f"/memories/{memory_id}/relations", json={
-            "target_id": target_id,
-            "relation": relation,
-        })
+        r = await self._client.post(
+            f"/memories/{memory_id}/relations",
+            json={
+                "target_id": target_id,
+                "relation": relation,
+            },
+        )
         _raise_for_status(r)
         return RelationResponse(**r.json())
 

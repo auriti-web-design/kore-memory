@@ -3,6 +3,7 @@ Kore — FastAPI application
 Memory layer with decay, auto-scoring, compression, semantic search, and auth.
 """
 
+import re as _re
 import secrets
 
 # ── Rate limiter in-memory ───────────────────────────────────────────────────
@@ -85,8 +86,7 @@ _rate_lock = _rl_threading.Lock()
 _rate_last_cleanup = 0.0
 
 
-import re as _re
-_SESSION_ID_RE = _re.compile(r'^[a-zA-Z0-9_\-\.]{1,128}$')
+_SESSION_ID_RE = _re.compile(r"^[a-zA-Z0-9_\-\.]{1,128}$")
 
 
 def _validate_session_id(raw: str | None) -> str | None:
@@ -128,8 +128,9 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
         # Periodic cleanup of stale buckets (every 60s) — prevents memory leak
         global _rate_last_cleanup
         if now - _rate_last_cleanup > 60:
-            stale_keys = [k for k, timestamps in _rate_buckets.items()
-                          if not timestamps or now - timestamps[-1] > window]
+            stale_keys = [
+                k for k, timestamps in _rate_buckets.items() if not timestamps or now - timestamps[-1] > window
+            ]
             for k in stale_keys:
                 del _rate_buckets[k]
             _rate_last_cleanup = now
@@ -144,6 +145,7 @@ def _check_rate_limit(client_ip: str, path: str) -> None:
 
 
 # ── Security headers middleware ──────────────────────────────────────────────
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     _API_CSP = "default-src 'none'; frame-ancestors 'none'"
@@ -181,27 +183,30 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 # ── App factory ──────────────────────────────────────────────────────────────
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     # Initialize API key (auto-generate if missing)
     from .auth import get_or_create_api_key
+
     get_or_create_api_key()
     # Enable audit log if configured
     if config.AUDIT_LOG:
         from .audit import register_audit_handler
+
         register_audit_handler()
     yield
     # Graceful shutdown: close the SQLite connection pool
     from .database import _pool
+
     _pool.clear()
 
 
 app = FastAPI(
     title="Kore",
     description=(
-        "The memory layer that thinks like a human: "
-        "remembers what matters, forgets what doesn't, and never calls home."
+        "The memory layer that thinks like a human: remembers what matters, forgets what doesn't, and never calls home."
     ),
     version=config.VERSION,
     lifespan=lifespan,
@@ -224,8 +229,10 @@ app.add_middleware(SecurityHeadersMiddleware)
 @app.exception_handler(Exception)
 async def _global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     import logging
+
     logging.error("Unhandled error: %s", exc, exc_info=True)
     return JSONResponse(status_code=500, content={"error": "Internal server error"})
+
 
 # Shared auth dependencies
 _Auth = Depends(require_auth)
@@ -233,6 +240,7 @@ _Agent = Depends(get_agent_id)
 
 
 # ── Core endpoints ────────────────────────────────────────────────────────────
+
 
 @app.post("/save", response_model=MemorySaveResponse, status_code=201)
 def save(
@@ -285,10 +293,11 @@ def search(
         try:
             import base64
             import json
-            decoded = base64.b64decode(cursor).decode('utf-8')
+
+            decoded = base64.b64decode(cursor).decode("utf-8")
             cursor_tuple = tuple(json.loads(decoded))
         except Exception:
-            raise HTTPException(400, "Invalid cursor format")
+            raise HTTPException(400, "Invalid cursor format") from None
 
     # Execute search with cursor
     results, next_cursor, total_count = search_memories(
@@ -305,9 +314,8 @@ def search(
     if next_cursor:
         import base64
         import json
-        cursor_str = base64.b64encode(
-            json.dumps(next_cursor).encode('utf-8')
-        ).decode('utf-8')
+
+        cursor_str = base64.b64encode(json.dumps(next_cursor).encode("utf-8")).decode("utf-8")
 
     return MemorySearchResponse(
         results=results,
@@ -337,21 +345,26 @@ def timeline(
         try:
             import base64
             import json
-            decoded = base64.b64decode(cursor).decode('utf-8')
+
+            decoded = base64.b64decode(cursor).decode("utf-8")
             cursor_tuple = tuple(json.loads(decoded))
         except Exception:
-            raise HTTPException(400, "Invalid cursor format")
+            raise HTTPException(400, "Invalid cursor format") from None
 
-    results, next_cursor, total_count = get_timeline(subject=subject, limit=limit, agent_id=agent_id, cursor=cursor_tuple)
+    results, next_cursor, total_count = get_timeline(
+        subject=subject,
+        limit=limit,
+        agent_id=agent_id,
+        cursor=cursor_tuple,
+    )
 
     # Encode next cursor
     cursor_str = None
     if next_cursor:
         import base64
         import json
-        cursor_str = base64.b64encode(
-            json.dumps(next_cursor).encode('utf-8')
-        ).decode('utf-8')
+
+        cursor_str = base64.b64encode(json.dumps(next_cursor).encode("utf-8")).decode("utf-8")
 
     return MemorySearchResponse(
         results=results,
@@ -374,6 +387,7 @@ def update(
         raise HTTPException(status_code=404, detail="Memory not found")
     # Fetch the actual importance from DB (req.importance may be None)
     from .database import get_connection
+
     with get_connection() as conn:
         row = conn.execute(
             "SELECT importance FROM memories WHERE id = ? AND agent_id = ?",
@@ -395,6 +409,7 @@ def delete(
 
 
 # ── Tag endpoints ─────────────────────────────────────────────────────────────
+
 
 @app.post("/memories/{memory_id}/tags", response_model=TagResponse, status_code=201)
 def tag_add(
@@ -447,6 +462,7 @@ def tag_search(
 
 # ── Relation endpoints ───────────────────────────────────────────────────────
 
+
 @app.post("/memories/{memory_id}/relations", response_model=RelationResponse, status_code=201)
 def relation_add(
     memory_id: int,
@@ -473,6 +489,7 @@ def relation_list(
 
 # ── Maintenance endpoints ─────────────────────────────────────────────────────
 
+
 @app.post("/decay/run", response_model=DecayRunResponse)
 def decay_run(
     request: Request,
@@ -494,6 +511,7 @@ def compress(
     """Merge similar memories for this agent."""
     _check_rate_limit(_get_client_ip(request), "/compress")
     from .compressor import run_compression
+
     result = run_compression(agent_id=agent_id)
     return CompressRunResponse(
         clusters_found=result.clusters_found,
@@ -521,6 +539,7 @@ def auto_tune(
     """Auto-tune memory importance based on access patterns."""
     _check_rate_limit(_get_client_ip(request), "/decay/run")  # share decay rate limit
     from .auto_tuner import run_auto_tune
+
     result = run_auto_tune(agent_id=agent_id)
     return AutoTuneResponse(**result)
 
@@ -532,10 +551,12 @@ def scoring_stats(
 ) -> ScoringStatsResponse:
     """Return importance scoring statistics for the agent's memories."""
     from .auto_tuner import get_scoring_stats
+
     return ScoringStatsResponse(**get_scoring_stats(agent_id=agent_id))
 
 
 # ── Backup / Import ──────────────────────────────────────────────────────────
+
 
 @app.get("/export", response_model=MemoryExportResponse)
 def export(
@@ -560,6 +581,7 @@ def import_data(
 
 # ── Archive endpoints ──────────────────────────────────────────────────────
 
+
 @app.post("/memories/{memory_id}/archive", response_model=ArchiveResponse, status_code=200)
 def archive(memory_id: int, _: str = _Auth, agent_id: str = _Agent) -> ArchiveResponse:
     if not archive_memory(memory_id, agent_id=agent_id):
@@ -581,6 +603,7 @@ def archive_list(limit: int = Query(50, ge=1, le=100), _: str = _Auth, agent_id:
 
 
 # ── Session endpoints ─────────────────────────────────────────────────────────
+
 
 @app.post("/sessions", response_model=SessionResponse, status_code=201)
 def session_create(
@@ -655,15 +678,20 @@ def session_delete(
 
 # ── Entity extraction ─────────────────────────────────────────────────────────
 
+
 @app.get("/entities", response_model=EntityListResponse)
 def entities_list(
-    type: str | None = Query(None, description="Filter by entity type (person, org, email, url, date, money, location, product)"),
+    type: str | None = Query(
+        None,
+        description="Filter by entity type (person, org, email, url, date, money, location, product)",
+    ),
     limit: int = Query(50, ge=1, le=200),
     _: str = _Auth,
     agent_id: str = _Agent,
 ) -> EntityListResponse:
     """List extracted entities from memory tags. Requires KORE_ENTITY_EXTRACTION=1."""
     from .integrations.entities import search_entities
+
     results = search_entities(agent_id, entity_type=type, limit=limit)
     return EntityListResponse(
         entities=[EntityRecord(**r) for r in results],
@@ -672,6 +700,7 @@ def entities_list(
 
 
 # ── Agents ────────────────────────────────────────────────────────────────────
+
 
 @app.get("/agents", response_model=AgentListResponse)
 def agents_list(_: str = _Auth) -> AgentListResponse:
@@ -685,29 +714,32 @@ def agents_list(_: str = _Auth) -> AgentListResponse:
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
+
 @app.get("/metrics", include_in_schema=False)
 def metrics(_: str = _Auth, agent_id: str = _Agent) -> Response:
     """Prometheus-compatible metrics endpoint."""
     from .repository import get_stats
+
     stats = get_stats(agent_id)
     lines = [
         "# HELP kore_memories_total Total memory records",
         "# TYPE kore_memories_total gauge",
-        f'kore_memories_total {stats["total_memories"]}',
+        f"kore_memories_total {stats['total_memories']}",
         "# HELP kore_memories_active Active (non-decayed) memory records",
         "# TYPE kore_memories_active gauge",
-        f'kore_memories_active {stats["active_memories"]}',
+        f"kore_memories_active {stats['active_memories']}",
         "# HELP kore_memories_archived Archived memory records",
         "# TYPE kore_memories_archived gauge",
-        f'kore_memories_archived {stats["archived_memories"]}',
+        f"kore_memories_archived {stats['archived_memories']}",
         "# HELP kore_db_size_bytes Database file size in bytes",
         "# TYPE kore_db_size_bytes gauge",
-        f'kore_db_size_bytes {stats["db_size_bytes"]}',
+        f"kore_db_size_bytes {stats['db_size_bytes']}",
     ]
     return Response(content="\n".join(lines) + "\n", media_type="text/plain; charset=utf-8")
 
 
 # ── Audit log ────────────────────────────────────────────────────────────────
+
 
 @app.get("/audit", response_model=AuditResponse)
 def audit_log(
@@ -720,16 +752,19 @@ def audit_log(
 ) -> AuditResponse:
     """Query the audit event log for the requesting agent."""
     from .audit import query_audit_log
+
     entries = query_audit_log(agent_id, event_type=event, limit=limit, since=since)
     return AuditResponse(events=entries, total=len(entries))
 
 
 # ── Favicon ───────────────────────────────────────────────────────────────────
 
+
 @app.get("/favicon.svg", include_in_schema=False)
 async def favicon():
     """Serve the SVG favicon."""
     from pathlib import Path
+
     svg_path = Path(__file__).parent.parent / "assets" / "favicon.svg"
     if svg_path.exists():
         return Response(content=svg_path.read_text(), media_type="image/svg+xml")
@@ -738,10 +773,12 @@ async def favicon():
 
 # ── Dashboard ─────────────────────────────────────────────────────────────────
 
+
 @app.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
 async def dashboard(request: Request) -> HTMLResponse:
     """Web dashboard for memory management. Requires auth if not in local-only mode."""
     from .auth import _is_local, _local_only_mode
+
     if not (_local_only_mode() and _is_local(request)):
         await require_auth(request, request.headers.get("X-Kore-Key"))
     html = get_dashboard_html()
@@ -753,10 +790,12 @@ async def dashboard(request: Request) -> HTMLResponse:
 
 # ── Utility ───────────────────────────────────────────────────────────────────
 
+
 @app.get("/health")
 def health() -> JSONResponse:
-    from .repository import _embeddings_available
     from .database import get_connection
+    from .repository import _embeddings_available
+
     # Verify DB connectivity
     db_ok = True
     try:
@@ -765,9 +804,11 @@ def health() -> JSONResponse:
     except Exception:
         db_ok = False
     status = "ok" if db_ok else "degraded"
-    return JSONResponse({
-        "status": status,
-        "version": app.version,
-        "semantic_search": _embeddings_available(),
-        "database": "connected" if db_ok else "error",
-    })
+    return JSONResponse(
+        {
+            "status": status,
+            "version": app.version,
+            "semantic_search": _embeddings_available(),
+            "database": "connected" if db_ok else "error",
+        }
+    )

@@ -23,6 +23,7 @@ def _get_db_path() -> Path:
 
 # ── Connection Pool ─────────────────────────────────────────────────────────
 
+
 class _ConnectionPool:
     """Simple thread-safe SQLite connection pool."""
 

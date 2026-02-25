@@ -23,6 +23,7 @@ MAX_EMBED_CHARS = config.MAX_EMBED_CHARS
 # --- numpy availability (optional, installed with [semantic]) ---
 try:
     import numpy as np
+
     _HAS_NUMPY = True
 except ImportError:
     np = None  # type: ignore[assignment]
@@ -33,6 +34,7 @@ except ImportError:
 def get_model() -> SentenceTransformer:
     """Carica il modello una volta e lo tiene in cache."""
     from sentence_transformers import SentenceTransformer
+
     return SentenceTransformer(MODEL_NAME)
 
 
@@ -67,10 +69,11 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 # --- Serialization: base64-encoded struct.pack (~50% smaller than JSON) ---
 
+
 def serialize(vector: list[float]) -> str:
     """Serialize a float vector to a compact base64 string."""
-    binary = struct.pack(f'{len(vector)}f', *vector)
-    return base64.b64encode(binary).decode('ascii')
+    binary = struct.pack(f"{len(vector)}f", *vector)
+    return base64.b64encode(binary).decode("ascii")
 
 
 def deserialize(blob: str) -> list[float]:
@@ -78,8 +81,8 @@ def deserialize(blob: str) -> list[float]:
     Deserialize a vector from either base64 binary or legacy JSON format.
     Auto-detects format: if the string starts with '[' it's JSON, otherwise base64.
     """
-    if blob.startswith('['):  # Legacy JSON format
+    if blob.startswith("["):  # Legacy JSON format
         return json.loads(blob)
     binary = base64.b64decode(blob)
     count = len(binary) // 4
-    return list(struct.unpack(f'{count}f', binary))
+    return list(struct.unpack(f"{count}f", binary))

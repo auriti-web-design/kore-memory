@@ -144,6 +144,5 @@ class KoreCrewAIMemory(CrewAIBaseMemory):  # type: ignore[misc]
 
     def __repr__(self) -> str:
         return (
-            f"KoreCrewAIMemory(base_url={self._base_url!r}, "
-            f"agent_id={self._agent_id!r}, category={self._category!r})"
+            f"KoreCrewAIMemory(base_url={self._base_url!r}, agent_id={self._agent_id!r}, category={self._category!r})"
         )

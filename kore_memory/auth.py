@@ -18,6 +18,7 @@ _KEY_FILE = config.API_KEY_FILE
 
 # ── Key management ────────────────────────────────────────────────────────────
 
+
 def get_or_create_api_key() -> str:
     """
     Load API key from env or file. Generate and persist one if missing.
@@ -38,6 +39,7 @@ def get_or_create_api_key() -> str:
 
     # Log key creation with masked value (security: never log full keys)
     import logging
+
     masked_key = f"{new_key[:4]}{'*' * 8}"
     logging.warning(f"🔑 Kore API key generated: {masked_key}")
     logging.warning(f"   Full key saved to: {_KEY_FILE}")
@@ -72,6 +74,7 @@ def _local_only_mode() -> bool:
 
 
 # ── FastAPI dependency ────────────────────────────────────────────────────────
+
 
 async def require_auth(
     request: Request,

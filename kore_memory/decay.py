@@ -17,10 +17,10 @@ from datetime import UTC, datetime
 
 # Half-life in days per importance level (higher importance = longer half-life)
 HALF_LIFE: dict[int, float] = {
-    1: 7.0,    # low — fades in ~1 week
-    2: 14.0,   # normal — fades in ~2 weeks
-    3: 30.0,   # important — fades in ~1 month
-    4: 90.0,   # very important — fades in ~3 months
+    1: 7.0,  # low — fades in ~1 week
+    2: 14.0,  # normal — fades in ~2 weeks
+    3: 30.0,  # important — fades in ~1 month
+    4: 90.0,  # very important — fades in ~3 months
     5: 365.0,  # critical — fades in ~1 year
 }
 

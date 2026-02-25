@@ -31,15 +31,15 @@ CORS_ORIGINS = [o.strip() for o in os.getenv("KORE_CORS_ORIGINS", "").split(",")
 # ── Rate limiting ─────────────────────────────────────────────────────────────
 
 RATE_LIMITS: dict[str, tuple[int, int]] = {
-    "/save": (30, 60),         # 30 req/min
-    "/search": (60, 60),       # 60 req/min
-    "/timeline": (60, 60),     # 60 req/min
-    "/decay/run": (5, 3600),   # 5 req/hour
-    "/compress": (2, 3600),    # 2 req/hour
-    "/export": (10, 3600),     # 10 req/hour
-    "/import": (5, 3600),      # 5 req/hour
-    "/cleanup": (10, 3600),    # 10 req/hour
-    "/delete": (120, 60),      # 120 delete/min
+    "/save": (30, 60),  # 30 req/min
+    "/search": (60, 60),  # 60 req/min
+    "/timeline": (60, 60),  # 60 req/min
+    "/decay/run": (5, 3600),  # 5 req/hour
+    "/compress": (2, 3600),  # 2 req/hour
+    "/export": (10, 3600),  # 10 req/hour
+    "/import": (5, 3600),  # 5 req/hour
+    "/cleanup": (10, 3600),  # 10 req/hour
+    "/delete": (120, 60),  # 120 delete/min
 }
 
 # ── Embedder ──────────────────────────────────────────────────────────────────

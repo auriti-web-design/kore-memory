@@ -115,11 +115,14 @@ def _run_auto_tune_inner(agent_id: str | None = None) -> dict:
             reduced = len(reduce_updates)
 
     if boosted > 0 or reduced > 0:
-        emit(MEMORY_AUTO_TUNED, {
-            "agent_id": agent_id,
-            "boosted": boosted,
-            "reduced": reduced,
-        })
+        emit(
+            MEMORY_AUTO_TUNED,
+            {
+                "agent_id": agent_id,
+                "boosted": boosted,
+                "reduced": reduced,
+            },
+        )
 
     return {"boosted": boosted, "reduced": reduced, "message": "Auto-tune complete"}
 
@@ -147,9 +150,7 @@ def get_scoring_stats(agent_id: str | None = None) -> dict:
             params.append(agent_id)
 
         # Total count
-        total = conn.execute(
-            f"SELECT COUNT(*) FROM memories {where}", params
-        ).fetchone()[0]
+        total = conn.execute(f"SELECT COUNT(*) FROM memories {where}", params).fetchone()[0]
 
         if total == 0:
             return {

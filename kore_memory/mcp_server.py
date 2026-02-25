@@ -10,6 +10,8 @@ Usage:
 
 from __future__ import annotations
 
+import re as _re
+
 from mcp.server.fastmcp import FastMCP
 
 from .database import init_db
@@ -37,9 +39,7 @@ mcp = FastMCP(
     json_response=True,
 )
 
-
-import re as _re
-_SAFE_AGENT_RE = _re.compile(r'[^a-zA-Z0-9_\-]')
+_SAFE_AGENT_RE = _re.compile(r"[^a-zA-Z0-9_\-]")
 
 
 def _sanitize_agent_id(agent_id: str) -> str:
@@ -49,6 +49,7 @@ def _sanitize_agent_id(agent_id: str) -> str:
 
 
 # ── Tools ────────────────────────────────────────────────────────────────────
+
 
 @mcp.tool()
 def memory_save(
@@ -81,8 +82,11 @@ def memory_search(
     Leave category empty to search across all categories.
     """
     results, next_cursor, total_count = search_memories(
-        query=query, limit=limit, category=category or None,
-        semantic=semantic, agent_id=_sanitize_agent_id(agent_id),
+        query=query,
+        limit=limit,
+        category=category or None,
+        semantic=semantic,
+        agent_id=_sanitize_agent_id(agent_id),
     )
     return {
         "results": [
@@ -113,7 +117,9 @@ def memory_timeline(
     Useful for reconstructing the history of a project or a person.
     """
     results, next_cursor, total_count = get_timeline(
-        subject=subject, limit=limit, agent_id=_sanitize_agent_id(agent_id),
+        subject=subject,
+        limit=limit,
+        agent_id=_sanitize_agent_id(agent_id),
     )
     return {
         "results": [
@@ -148,6 +154,7 @@ def memory_compress(agent_id: str = "default") -> dict:
     Reduces redundancy while preserving important information.
     """
     from .compressor import run_compression
+
     result = run_compression(agent_id=_sanitize_agent_id(agent_id))
     return {
         "clusters_found": result.clusters_found,
@@ -317,18 +324,18 @@ def memory_import(
 
 # ── Resources ────────────────────────────────────────────────────────────────
 
+
 @mcp.resource("kore://health")
 def health_resource() -> str:
     """Kore server health status."""
     from . import config
     from .repository import _embeddings_available
-    return (
-        f"Kore v{config.VERSION} — "
-        f"semantic_search={'enabled' if _embeddings_available() else 'disabled'}"
-    )
+
+    return f"Kore v{config.VERSION} — semantic_search={'enabled' if _embeddings_available() else 'disabled'}"
 
 
 # ── Entry point ──────────────────────────────────────────────────────────────
+
 
 def main():
     mcp.run()
