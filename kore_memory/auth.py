@@ -4,7 +4,7 @@ API key validation + agent namespace isolation.
 
 Config via environment variables:
   KORE_API_KEY   — master key (required in non-local mode)
-  KORE_LOCAL_ONLY — if "1", skip auth for 127.0.0.1 requests (default: "0")
+  KORE_LOCAL_ONLY — if "1", skip auth for 127.0.0.1 requests (default: "1")
 """
 
 import os
@@ -38,7 +38,7 @@ def get_or_create_api_key() -> str:
 
     # Log key creation with masked value (security: never log full keys)
     import logging
-    masked_key = f"{new_key[:8]}...{new_key[-8:]}"
+    masked_key = f"{new_key[:4]}{'*' * 8}"
     logging.warning(f"🔑 Kore API key generated: {masked_key}")
     logging.warning(f"   Full key saved to: {_KEY_FILE}")
     logging.warning("   Read the key from the file above or set KORE_API_KEY env var.")
@@ -58,8 +58,11 @@ def _loaded_key() -> str:
 
 def _is_local(request: Request) -> bool:
     client_host = request.client.host if request.client else ""
-    # "testclient" is the FastAPI TestClient host — treat as local in tests
-    return client_host in ("127.0.0.1", "::1", "localhost", "testclient")
+    trusted = {"127.0.0.1", "::1", "localhost"}
+    # "testclient" solo in ambienti di test espliciti
+    if os.getenv("KORE_TEST_MODE", "0") == "1":
+        trusted.add("testclient")
+    return client_host in trusted
 
 
 def _local_only_mode() -> bool:
