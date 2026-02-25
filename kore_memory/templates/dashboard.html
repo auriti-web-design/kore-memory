@@ -1010,7 +1010,7 @@ function loadOverview() {
     $('#version-badge').textContent = 'v' + state.version;
 
     var totalMem = searchRes.total || 0;
-    var agentCount = agents ? agents.length : 0;
+    var agentCount = agents ? (agents.total || (agents.agents || agents).length) : 0;
     var avgImp = scoring ? (scoring.avg_importance || 0).toFixed(1) : '\u2014';
     var semStatus = state.semanticEnabled ? 'Attivo' : 'Off';
     var archivedCount = arch.total || 0;
@@ -1826,12 +1826,13 @@ function runMaintenanceAction(action) {
    ═══════════════════════════════════════════════════════════════════════ */
 function loadSettings() {
   /* Agenti */
-  api.get('/agents').then(function(agents) {
+  api.get('/agents').then(function(res) {
+    var agents = res.agents || res;
     if (agents && agents.length) {
       var h = '<table><thead><tr><th>Agent ID</th><th>Memorie</th><th>Ultima attivit\u00e0</th></tr></thead><tbody>';
       agents.forEach(function(a) {
         h += '<tr><td style="font-family:var(--font-mono);color:var(--accent)">' + esc(a.agent_id) + '</td>' +
-          '<td>' + a.memory_count + '</td><td style="color:var(--text-dim)">' + fmtDate(a.last_activity) + '</td></tr>';
+          '<td>' + a.memory_count + '</td><td style="color:var(--text-dim)">' + fmtDate(a.last_active || a.last_activity) + '</td></tr>';
       });
       h += '</tbody></table>';
       safeRender('#agents-list', h);
@@ -2064,7 +2065,8 @@ function initEventHandlers() {
 
 /* ── Carica lista agenti nel selettore ─────────────────────────────── */
 function loadAgentSelector() {
-  api.get('/agents').then(function(agents) {
+  api.get('/agents').then(function(res) {
+    var agents = res.agents || res;
     var select = $('#agent-select');
     var current = select.value;
     var html = '';
