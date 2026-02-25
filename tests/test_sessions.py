@@ -16,12 +16,16 @@ HEADERS = {"X-Agent-Id": "test-agent"}
 
 @pytest.fixture(autouse=True)
 def _fresh_db(tmp_path):
+    original_db_path = os.environ.get("KORE_DB_PATH")
     db_file = str(tmp_path / "test.db")
     os.environ["KORE_DB_PATH"] = db_file
     _pool.clear()
     init_db()
     yield
     _pool.clear()
+    # Restore the original DB path (set by conftest.py)
+    if original_db_path is not None:
+        os.environ["KORE_DB_PATH"] = original_db_path
 
 
 @pytest.fixture()

@@ -14,14 +14,19 @@ from fastapi.testclient import TestClient
 
 @pytest.fixture(autouse=True)
 def _temp_db(tmp_path):
-    """Crea un DB temporaneo per ogni test."""
+    """Crea un DB temporaneo per ogni test, ripristina il path originale dopo."""
+    original_db_path = os.environ.get("KORE_DB_PATH")
     db_file = tmp_path / "test.db"
     os.environ["KORE_DB_PATH"] = str(db_file)
     # Reset API key cache
     import kore_memory.auth as auth_mod
     auth_mod._API_KEY = None
     yield
-    os.environ.pop("KORE_DB_PATH", None)
+    # Restore the original DB path (set by conftest.py)
+    if original_db_path is not None:
+        os.environ["KORE_DB_PATH"] = original_db_path
+    else:
+        os.environ.pop("KORE_DB_PATH", None)
 
 
 @pytest.fixture
