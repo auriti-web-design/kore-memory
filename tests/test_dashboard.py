@@ -37,17 +37,19 @@ async def test_dashboard_returns_html(client):
 
 @pytest.mark.anyio
 async def test_dashboard_contains_all_sections(client):
-    """L'HTML deve contenere tutte e 7 le sezioni (tab) della dashboard."""
+    """L'HTML deve contenere tutte le 8 pagine della dashboard."""
     resp = await client.get("/dashboard")
     html = resp.text
+    # Ogni pagina è identificata da data-page="..." nel nuovo layout
     sections = [
-        "page-overview",
-        "page-memories",
-        "page-tags",
-        "page-relations",
-        "page-timeline",
-        "page-maintenance",
-        "page-backup",
+        'data-page="overview"',
+        'data-page="memories"',
+        'data-page="tags"',
+        'data-page="graph"',
+        'data-page="sessions"',
+        'data-page="timeline"',
+        'data-page="maintenance"',
+        'data-page="settings"',
     ]
     for section in sections:
         assert section in html, f"Sezione {section} mancante dall'HTML"
@@ -91,7 +93,8 @@ async def test_dashboard_contains_js_api_helpers(client):
     """L'HTML deve contenere le funzioni JS per chiamare le API."""
     resp = await client.get("/dashboard")
     html = resp.text
-    assert "function api(" in html
-    assert "function doSearch(" in html
-    assert "function doSave(" in html
-    assert "function doExport(" in html
+    # Nuovo layout: API client come oggetto, funzioni per ogni pagina
+    assert "var api =" in html
+    assert "function loadMemories(" in html
+    assert "function loadOverview(" in html
+    assert "function loadGraph(" in html
