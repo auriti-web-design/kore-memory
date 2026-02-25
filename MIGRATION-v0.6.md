@@ -103,5 +103,5 @@ pip install --upgrade kore-memory
 
 ## 📞 Need Help?
 
-- [Open an issue](https://github.com/auriti-web-design/kore-memory/issues)
-- [Read the docs](https://github.com/auriti-web-design/kore-memory#readme)
+- [Open an issue](https://github.com/auriti-labs/kore-memory/issues)
+- [Read the docs](https://github.com/auriti-labs/kore-memory#readme)

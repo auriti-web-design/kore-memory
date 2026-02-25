@@ -25,7 +25,7 @@ QUICK_START = """
       -d '{\"content\": \"your first memory\", \"category\": \"general\"}'
 
 \033[38;5;244m  ─────────────────────────────────────────────────\033[0m
-  \033[38;5;75mhttps://github.com/auriti-web-design/kore-memory\033[0m
+  \033[38;5;75mhttps://github.com/auriti-labs/kore-memory\033[0m
 \033[38;5;244m  ─────────────────────────────────────────────────\033[0m
 """
 

@@ -10,7 +10,7 @@ Remembers what matters. Forgets what doesn't. Never calls home.
 
 <br/>
 
-[![CI](https://github.com/auriti-web-design/kore-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/auriti-web-design/kore-memory/actions/workflows/ci.yml)
+[![CI](https://github.com/auriti-labs/kore-memory/actions/workflows/ci.yml/badge.svg)](https://github.com/auriti-labs/kore-memory/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/kore-memory.svg?style=flat-square&color=7c3aed)](https://pypi.org/project/kore-memory/)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue?style=flat-square)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -682,7 +682,7 @@ with KoreClient() as kore:
 ## 🛠️ Development
 
 ```bash
-git clone https://github.com/auriti-web-design/kore-memory
+git clone https://github.com/auriti-labs/kore-memory
 cd kore-memory
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[semantic,dev]"
@@ -693,7 +693,7 @@ pytest tests/ -v
 
 ## 📄 License
 
-MIT © [Juan Auriti](https://github.com/auriti-web-design)
+MIT © [Juan Auriti](https://github.com/auriti)
 
 ---
 

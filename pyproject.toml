@@ -52,10 +52,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/auriti-web-design/kore-memory"
+Homepage = "https://github.com/auriti-labs/kore-memory"
 Documentation = "https://auritidesign.it/docs"
-Repository = "https://github.com/auriti-web-design/kore-memory"
-Issues = "https://github.com/auriti-web-design/kore-memory/issues"
+Repository = "https://github.com/auriti-labs/kore-memory"
+Issues = "https://github.com/auriti-labs/kore-memory/issues"
 
 [project.scripts]
 kore = "kore_memory.cli:main"

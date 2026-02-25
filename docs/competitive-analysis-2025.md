@@ -1,8 +1,8 @@
 # Analisi Competitiva: Kore Memory nel Mercato AI Agent Memory (2025)
 
 **Data:** Febbraio 2025
-**Prodotto:** [kore-memory](https://github.com/auriti-web-design/kore-memory) v0.3.1
-**Autore:** Ricerca condotta per auriti-web-design
+**Prodotto:** [kore-memory](https://github.com/auriti-labs/kore-memory) v0.3.1
+**Autore:** Ricerca condotta per auriti-labs
 
 ---
 

@@ -39,13 +39,13 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/auriti-web-design/kore-memory.git",
+    "url": "https://github.com/auriti-labs/kore-memory.git",
     "directory": "sdk/js"
   },
   "bugs": {
-    "url": "https://github.com/auriti-web-design/kore-memory/issues"
+    "url": "https://github.com/auriti-labs/kore-memory/issues"
   },
-  "homepage": "https://github.com/auriti-web-design/kore-memory#readme",
+  "homepage": "https://github.com/auriti-labs/kore-memory#readme",
   "engines": {
     "node": ">=18.0.0"
   },

@@ -1,6 +1,6 @@
 # Kore Memory Client
 
-JavaScript/TypeScript client for [Kore Memory](https://github.com/auriti-web-design/kore-memory) - the memory layer that thinks like a human.
+JavaScript/TypeScript client for [Kore Memory](https://github.com/auriti-labs/kore-memory) - the memory layer that thinks like a human.
 
 ## Features
 
@@ -205,8 +205,8 @@ Available memory categories:
 
 ## License
 
-MIT © [Juan Auriti](https://github.com/auriti-web-design)
+MIT © [Juan Auriti](https://github.com/auriti)
 
 ---
 
-Part of the [Kore Memory](https://github.com/auriti-web-design/kore-memory) ecosystem.
+Part of the [Kore Memory](https://github.com/auriti-labs/kore-memory) ecosystem.
