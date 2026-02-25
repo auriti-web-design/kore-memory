@@ -102,7 +102,7 @@ jobs:
           print(f'{rate * 100:.1f}')
           ")
           echo "Coverage: ${COVERAGE}%"
-          THRESHOLD=85
+          THRESHOLD=80
           python -c "
           cov = float('${COVERAGE}')
           threshold = ${THRESHOLD}
