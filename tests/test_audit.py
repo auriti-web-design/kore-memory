@@ -3,15 +3,8 @@ Kore — Audit log tests
 Tests for event audit logging, querying, cleanup, and the /audit endpoint.
 """
 
-import os
-import tempfile
-
 import pytest
 from fastapi.testclient import TestClient
-
-# DB temporaneo + local-only mode (no auth richiesta nei test)
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
 
 from kore_memory import events  # noqa: E402
 from kore_memory.audit import (  # noqa: E402
@@ -20,10 +13,8 @@ from kore_memory.audit import (  # noqa: E402
     query_audit_log,
     register_audit_handler,
 )
-from kore_memory.database import get_connection, init_db  # noqa: E402
+from kore_memory.database import get_connection  # noqa: E402
 from kore_memory.main import app  # noqa: E402
-
-init_db()
 
 HEADERS = {"X-Agent-Id": "test-agent"}
 OTHER_AGENT = {"X-Agent-Id": "other-agent"}

@@ -5,20 +5,11 @@ Auth: local-only mode enabled in tests (KORE_LOCAL_ONLY=1).
 """
 
 import os
-import tempfile
 
 import pytest
 from fastapi.testclient import TestClient
 
-# DB temporaneo + local-only mode (no auth richiesta nei test)
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
-
-from kore_memory.database import init_db  # noqa: E402
 from kore_memory.main import app  # noqa: E402
-
-# Inizializza schema — il TestClient non attiva il lifespan senza context manager
-init_db()
 
 # Header di default: namespace agent per test di isolamento
 HEADERS = {"X-Agent-Id": "test-agent"}

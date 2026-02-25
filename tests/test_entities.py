@@ -5,19 +5,11 @@ Uses TestClient (ASGI in-process), same pattern as test_api.py.
 """
 
 import os
-import tempfile
 
 import pytest
 from fastapi.testclient import TestClient
 
-# DB temporaneo + local-only mode
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
-
-from kore_memory.database import init_db  # noqa: E402
 from kore_memory.main import app  # noqa: E402
-
-init_db()
 
 HEADERS = {"X-Agent-Id": "entity-test-agent"}
 client = TestClient(app)

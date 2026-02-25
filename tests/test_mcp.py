@@ -7,14 +7,7 @@ Setup: temp DB + local-only mode, same pattern as test_api.py.
 Must set env vars BEFORE importing mcp_server (it calls init_db at import time).
 """
 
-import os
-import tempfile
-
 import pytest
-
-# DB temporaneo + local-only mode — DEVE essere impostato prima dell'import
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
 
 from kore_memory.mcp_server import (  # noqa: E402
     memory_add_relation,

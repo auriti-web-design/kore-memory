@@ -15,22 +15,11 @@ Copertura target: tutti i metodi pubblici di KoreClient
   - context manager __enter__ / __exit__
 """
 
-import os
-import tempfile
-
 import pytest
-
-# Imposta DB temporaneo e disabilita auth prima di importare il modulo
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from kore_memory.database import init_db  # noqa: E402
 from kore_memory.main import app, _rate_buckets  # noqa: E402
-
-# Inizializza lo schema SQLite prima di ogni test
-init_db()
 
 from kore_memory.client import (  # noqa: E402
     KoreClient,

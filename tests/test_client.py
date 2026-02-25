@@ -6,19 +6,9 @@ I test di integrazione usano AsyncKoreClient (ASGITransport è solo async).
 I test unit verificano helpers, eccezioni, e headers senza rete.
 """
 
-import os
-import tempfile
-
 import pytest
 
-# DB temporaneo + local-only mode (no auth)
-os.environ["KORE_DB_PATH"] = tempfile.mktemp(suffix=".db")
-os.environ["KORE_LOCAL_ONLY"] = "1"
-
-from kore_memory.database import init_db  # noqa: E402
 from kore_memory.main import app, _rate_buckets  # noqa: E402
-
-init_db()
 
 import httpx  # noqa: E402
 

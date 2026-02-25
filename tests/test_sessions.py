@@ -3,11 +3,8 @@ Tests for session/conversation tracking (v0.9.0).
 """
 
 import os
-import tempfile
 
 import pytest
-
-os.environ["KORE_LOCAL_ONLY"] = "1"
 
 from fastapi.testclient import TestClient
 
