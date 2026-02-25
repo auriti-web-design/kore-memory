@@ -340,7 +340,7 @@ Interactive docs: **http://localhost:8765/docs**
 {
   "content": "Memory content (3–4000 chars)",
   "category": "general",
-  "importance": 1,
+  "importance": null,
   "ttl_hours": null
 }
 ```
@@ -349,7 +349,7 @@ Interactive docs: **http://localhost:8765/docs**
 |---|---|---|---|
 | `content` | string | *required* | Memory text (3–4000 chars) |
 | `category` | string | `"general"` | One of the categories above |
-| `importance` | int (1–5) | `1` | 1 = auto-scored, 2–5 = explicit |
+| `importance` | int (1–5) \| null | `null` | null = auto-scored, 1–5 = explicit |
 | `ttl_hours` | int \| null | `null` | Auto-expire after N hours (1–8760). Null = never expires |
 
 ---
@@ -679,18 +679,6 @@ with KoreClient() as kore:
 - [ ] PostgreSQL backend
 - [ ] Embeddings v2 (multilingual-e5-large)
 
----
-
-## 🤝 Built with OpenClaw
-
-Kore was developed and is actively used inside **[OpenClaw](https://openclaw.ai)** — a personal AI agent platform that runs Claude on your own infrastructure.
-
-OpenClaw uses Kore as its persistent memory layer: every important conversation, decision, and preference gets stored, scored, and retrieved semantically across sessions.
-
-If you're building AI agents with OpenClaw, Kore integrates natively — just point your skill at `http://localhost:8765`.
-
----
-
 ## 🛠️ Development
 
 ```bash
@@ -711,8 +699,6 @@ MIT © [Juan Auriti](https://github.com/auriti-web-design)
 
 <div align="center">
 <sub>Built for AI agents that deserve better memory.</sub>
-<br/>
-<sub>Developed and battle-tested with <a href="https://openclaw.ai">OpenClaw</a> — the personal AI agent platform.</sub>
 </div>
 
 ---
