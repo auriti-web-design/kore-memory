@@ -59,11 +59,9 @@ def auto_score(content: str, category: str) -> int:
                 score = max(score, level)
                 break
 
-    # Length bonus: detailed content is likely more important
+    # Length bonus: contenuto dettagliato e' probabilmente piu' importante
     word_count = len(content.split())
     if word_count > 60:
         score = min(5, score + 1)
-    elif word_count > 30:
-        score = min(5, score + 0)  # no change, just don't penalize
 
     return max(1, min(5, score))
