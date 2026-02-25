@@ -83,7 +83,7 @@ def _load_compressible_memories(agent_id: str = "default") -> list[dict]:
             """
             SELECT id, content, category, importance, embedding
             FROM memories
-            WHERE compressed_into IS NULL AND embedding IS NOT NULL AND agent_id = ?
+            WHERE compressed_into IS NULL AND archived_at IS NULL AND embedding IS NOT NULL AND agent_id = ?
             """,
             (agent_id,),
         ).fetchall()

@@ -38,7 +38,7 @@ def save_memory(req: MemorySaveRequest, agent_id: str = "default", session_id: s
     Returns (row_id, importance).
     """
     importance = req.importance
-    if importance == 1:
+    if importance is None:
         importance = auto_score(req.content, req.category)
 
     embedding_blob = None
@@ -111,7 +111,7 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
     importances = []
     for req in reqs:
         imp = req.importance
-        if imp == 1:
+        if imp is None:
             imp = auto_score(req.content, req.category)
         importances.append(imp)
 
@@ -146,6 +146,10 @@ def save_memory_batch(reqs: list[MemorySaveRequest], agent_id: str = "default") 
                 },
             )
             results.append((cursor.lastrowid, importances[i]))
+
+    # Emetti evento audit per ogni memoria salvata
+    for row_id, _ in results:
+        emit(MEMORY_SAVED, {"id": row_id, "agent_id": agent_id})
 
     # Invalida cache vettoriale una sola volta
     if any(e is not None for e in embeddings):
@@ -316,7 +320,7 @@ def run_decay_pass(agent_id: str | None = None) -> int:
 
 def _run_decay_pass_inner(agent_id: str | None = None) -> int:
     with get_connection() as conn:
-        sql = "SELECT id, importance, created_at, last_accessed, access_count FROM memories WHERE compressed_into IS NULL"
+        sql = "SELECT id, importance, created_at, last_accessed, access_count FROM memories WHERE compressed_into IS NULL AND archived_at IS NULL"
         params: list = []
         if agent_id:
             sql += " AND agent_id = ?"
@@ -827,6 +831,7 @@ def _fts_search(
                 WHERE memories_fts MATCH :query
                   AND m.agent_id = :agent_id
                   AND m.compressed_into IS NULL
+                  AND m.archived_at IS NULL
                   AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
                   {category_filter}
                   {cursor_filter}
@@ -840,16 +845,21 @@ def _fts_search(
                        decay_score, access_count, last_accessed,
                        created_at, updated_at, NULL AS score
                 FROM memories
-                WHERE content LIKE :query ESCAPE '\'
+                WHERE content LIKE :query ESCAPE '\\'
                   AND agent_id = :agent_id
                   AND compressed_into IS NULL
+                  AND archived_at IS NULL
                   AND (expires_at IS NULL OR expires_at > datetime('now'))
                   {category_filter}
                   {cursor_filter}
                 ORDER BY decay_score DESC, id DESC
                 LIMIT :limit
             """
-            escaped_query = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+            # q=* → lista tutte le memorie (wildcard globale)
+            if query.strip() == "*":
+                escaped_query = ""
+            else:
+                escaped_query = query.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
             params = {"query": f"%{escaped_query}%", "limit": limit, "agent_id": agent_id}
 
         if cursor:
@@ -898,33 +908,29 @@ def _semantic_search(
     cursor_filter = ""
     params = [id for id, _ in top_ids]
 
-    if cursor:
-        decay_score, last_id = cursor
-        cursor_filter = "AND ((decay_score, id) < (?, ?))"
-        params.extend([decay_score, last_id])
-
     with get_connection() as conn:
+        # Costruisci query — ordine parametri: IN ids, category, cursor
+        category_clause = "AND category = ?" if category else ""
+        if category:
+            params.append(category)
+
+        if cursor:
+            decay_score, last_id = cursor
+            cursor_filter = "AND ((decay_score, id) < (?, ?))"
+            params.extend([decay_score, last_id])
+
         sql = f"""
             SELECT id, content, category, importance,
                    decay_score, access_count, last_accessed,
                    created_at, updated_at
             FROM memories
             WHERE id IN ({placeholders})
+              AND archived_at IS NULL
               AND (expires_at IS NULL OR expires_at > datetime('now'))
+              {category_clause}
               {cursor_filter}
             ORDER BY decay_score DESC, id DESC
         """
-        params: list = [mem_id for mem_id, _ in top_ids]
-        if category:
-            sql = f"""
-                SELECT id, content, category, importance,
-                       decay_score, access_count, last_accessed,
-                       created_at, updated_at
-                FROM memories
-                WHERE id IN ({placeholders}) AND category = ?
-                  AND (expires_at IS NULL OR expires_at > datetime('now'))
-            """
-            params.append(category)
         rows = conn.execute(sql, params).fetchall()
 
     results = []

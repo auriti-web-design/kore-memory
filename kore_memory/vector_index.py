@@ -122,6 +122,7 @@ class VectorIndex:
                 SELECT id, embedding FROM memories
                 WHERE embedding IS NOT NULL
                   AND compressed_into IS NULL
+                  AND archived_at IS NULL
                   AND agent_id = ?
                 """,
                 (agent_id,),
