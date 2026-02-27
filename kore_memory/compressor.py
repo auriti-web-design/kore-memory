@@ -18,10 +18,12 @@ from dataclasses import dataclass
 from . import config
 from .database import get_connection
 from .embedder import cosine_similarity, deserialize
+from .events import MEMORY_COMPRESSED, emit
 from .models import MemorySaveRequest
 from .repository import _compress_lock, save_memory
 
 SIMILARITY_THRESHOLD = config.SIMILARITY_THRESHOLD
+MAX_COMPRESSION_DEPTH = 3  # Limite massimo catena di compressione
 
 # --- numpy availability (optional, installed with [semantic]) ---
 try:
@@ -70,6 +72,12 @@ def _run_compression_inner(agent_id: str = "default") -> CompressionResult:
         if new_id:
             merged += len(cluster)
             created += 1
+            emit(MEMORY_COMPRESSED, {
+                "id": new_id,
+                "agent_id": agent_id,
+                "merged_ids": [m["id"] for m in cluster],
+                "cluster_size": len(cluster),
+            })
 
     return CompressionResult(
         clusters_found=len(clusters),
@@ -88,7 +96,48 @@ def _load_compressible_memories(agent_id: str = "default") -> list[dict]:
             """,
             (agent_id,),
         ).fetchall()
-    return [dict(r) for r in rows]
+
+    # Filtra memorie che sono già risultato di troppi livelli di compressione
+    result = []
+    for r in rows:
+        result.append(dict(r))
+
+    if not result:
+        return result
+
+    # Escludi memorie che hanno già raggiunto la profondità massima di compressione
+    ids = [m["id"] for m in result]
+    with get_connection() as conn:
+        depth_map = _get_compression_depths(conn, ids)
+
+    return [m for m in result if depth_map.get(m["id"], 0) < MAX_COMPRESSION_DEPTH]
+
+
+def _get_compression_depths(conn, memory_ids: list[int]) -> dict[int, int]:
+    """Calcola la profondità di compressione per ogni memoria.
+    Depth 0 = memoria originale, 1 = risultato di una compressione, ecc."""
+    if not memory_ids:
+        return {}
+
+    # Conta quante memorie puntano a ciascun id (quanti livelli di merge)
+    placeholders = ",".join("?" for _ in memory_ids)
+    rows = conn.execute(
+        f"""
+        WITH RECURSIVE chain(id, depth) AS (
+            SELECT id, 0 FROM memories WHERE id IN ({placeholders})
+            UNION ALL
+            SELECT m.id, c.depth + 1
+            FROM memories m
+            JOIN chain c ON m.compressed_into = c.id
+        )
+        SELECT chain.id, MAX(chain.depth) AS max_depth
+        FROM chain
+        GROUP BY chain.id
+        """,
+        memory_ids,
+    ).fetchall()
+
+    return {row["id"]: row["max_depth"] for row in rows}
 
 
 def _find_clusters(memories: list[dict]) -> list[list[dict]]:

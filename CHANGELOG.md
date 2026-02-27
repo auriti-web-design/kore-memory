@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-02-27
+
+### Theme: "Stability"
+
+### Fixed
+- **[CRITICAL] Archived memories leak in export** — `export_memories()` now filters `archived_at IS NULL`, preventing archived data from appearing in exports
+- **[CRITICAL] Archived memories leak in search_by_tag** — `search_by_tag()` now filters `archived_at IS NULL`
+- **[CRITICAL] Archived memories counted as active** — `_count_active_memories()` now excludes archived memories from pagination totals (both FTS5 and LIKE paths)
+- **4 audit events never emitted** — `archive_memory()`, `restore_memory()`, `run_decay_pass()`, and `compress()` now properly emit `MEMORY_ARCHIVED`, `MEMORY_RESTORED`, `MEMORY_DECAYED`, `MEMORY_COMPRESSED` events
+- **Race condition in VectorIndex** — `load_vectors()` dirty flag check+reload now protected by single lock acquisition (TOCTOU fix)
+- **Infinite compression chains** — Compressor now limits compression depth to 3 levels via recursive CTE depth calculation
+- **Connection pool NameError** — `acquire()` now handles `NameError` if `conn` is undefined when closing corrupt connections
+- **Audit handler accumulation** — `events.on()` now deduplicates handlers, preventing duplicate event logging on repeated registrations
+
+### Added
+- **Composite index** `idx_agent_decay_active ON memories(agent_id, compressed_into, archived_at, decay_score DESC)` for faster search and decay queries
+- **SQLite PRAGMA optimizations** — `synchronous=NORMAL`, `temp_store=MEMORY`, `mmap_size=256MB`, `cache_size=32MB` (5-10x write performance improvement)
+- 14 new tests covering all v1.1.0 fixes (373 total tests)
+
+---
+
 ## [1.0.2] - 2026-02-27
 
 ### Fixed

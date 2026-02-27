@@ -27,8 +27,9 @@ MEMORY_RESTORED = "memory.restored"
 
 
 def on(event: str, handler: EventHandler) -> None:
-    """Register a handler for an event type."""
-    _handlers[event].append(handler)
+    """Register a handler for an event type. Evita duplicati."""
+    if handler not in _handlers[event]:
+        _handlers[event].append(handler)
 
 
 def emit(event: str, data: dict[str, Any] | None = None) -> None:

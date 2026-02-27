@@ -61,13 +61,17 @@ class VectorIndex:
         """
         Carica/restituisce i vettori per un agente.
         Se la cache è dirty, ricarica dal DB.
+        Thread-safe: usa lock per evitare reload concorrenti (TOCTOU).
         """
-        cache = self.get_cache(agent_id)
+        with self._lock:
+            if agent_id not in self._caches:
+                self._caches[agent_id] = _AgentCache()
+            cache = self._caches[agent_id]
 
-        if cache.dirty:
-            self._reload_from_db(agent_id, cache)
+            if cache.dirty:
+                self._reload_from_db(agent_id, cache)
 
-        return cache.vectors
+            return cache.vectors
 
     def search(
         self,

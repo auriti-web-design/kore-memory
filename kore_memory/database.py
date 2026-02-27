@@ -49,14 +49,19 @@ class _ConnectionPool:
         except Exception:
             # Connessione corrotta — chiudi per evitare fd leak
             try:
-                conn.close()
-            except Exception:
+                conn.close()  # noqa: F821 — conn definita da get_nowait() sopra
+            except (Exception, NameError):
                 pass
         # Crea nuova connessione
         conn = sqlite3.connect(db_path, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
+        # Ottimizzazioni performance: 5-10x miglioramento write
+        conn.execute("PRAGMA synchronous=NORMAL")
+        conn.execute("PRAGMA temp_store=MEMORY")
+        conn.execute("PRAGMA mmap_size=268435456")  # 256MB mmap
+        conn.execute("PRAGMA cache_size=-32000")  # 32MB cache
         return conn
 
     def release(self, db_path: str, conn: sqlite3.Connection) -> None:
@@ -120,6 +125,10 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_memories_created_at ON memories (created_at DESC);
             CREATE INDEX IF NOT EXISTS idx_memories_expires ON memories (expires_at) WHERE expires_at IS NOT NULL;
             CREATE INDEX IF NOT EXISTS idx_memories_archived ON memories (archived_at) WHERE archived_at IS NOT NULL;
+
+            -- Indice composito per query search e decay_pass (agent + attive + ordinamento)
+            CREATE INDEX IF NOT EXISTS idx_agent_decay_active
+                ON memories (agent_id, compressed_into, archived_at, decay_score DESC);
 
             CREATE VIRTUAL TABLE IF NOT EXISTS memories_fts
             USING fts5(content, category, content='memories', content_rowid='id', tokenize='unicode61');

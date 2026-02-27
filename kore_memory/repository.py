@@ -9,7 +9,15 @@ from datetime import UTC, datetime, timedelta
 
 from .database import _get_db_path, get_connection
 from .decay import compute_decay, effective_score, should_forget
-from .events import MEMORY_DELETED, MEMORY_SAVED, MEMORY_UPDATED, emit
+from .events import (
+    MEMORY_ARCHIVED,
+    MEMORY_DECAYED,
+    MEMORY_DELETED,
+    MEMORY_RESTORED,
+    MEMORY_SAVED,
+    MEMORY_UPDATED,
+    emit,
+)
 from .models import MemoryRecord, MemorySaveRequest, MemoryUpdateRequest
 from .scorer import auto_score
 
@@ -362,6 +370,7 @@ def _run_decay_pass_inner(agent_id: str | None = None) -> int:
                 "UPDATE memories SET decay_score = ?, updated_at = ? WHERE id = ?",
                 updates,
             )
+        emit(MEMORY_DECAYED, {"agent_id": agent_id or "all", "updated": len(updates)})
 
     return len(updates)
 
@@ -408,6 +417,7 @@ def export_memories(agent_id: str = "default") -> list[dict]:
                    access_count, last_accessed, created_at, updated_at
             FROM memories
             WHERE agent_id = ? AND compressed_into IS NULL
+              AND archived_at IS NULL
               AND (expires_at IS NULL OR expires_at > datetime('now'))
             ORDER BY created_at DESC
             """,
@@ -523,6 +533,7 @@ def search_by_tag(tag: str, agent_id: str = "default", limit: int = 20) -> list[
             FROM memories m
             JOIN memory_tags t ON m.id = t.memory_id
             WHERE t.tag = ? AND m.agent_id = ? AND m.compressed_into IS NULL
+              AND m.archived_at IS NULL
               AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
             ORDER BY m.importance DESC, m.created_at DESC
             LIMIT ?
@@ -586,7 +597,12 @@ def archive_memory(memory_id: int, agent_id: str = "default") -> bool:
             "UPDATE memories SET archived_at = datetime('now') WHERE id = ? AND agent_id = ? AND archived_at IS NULL",
             (memory_id, agent_id),
         )
-        return cursor.rowcount > 0
+        archived = cursor.rowcount > 0
+
+    if archived:
+        emit(MEMORY_ARCHIVED, {"id": memory_id, "agent_id": agent_id})
+
+    return archived
 
 
 def restore_memory(memory_id: int, agent_id: str = "default") -> bool:
@@ -596,7 +612,12 @@ def restore_memory(memory_id: int, agent_id: str = "default") -> bool:
             "UPDATE memories SET archived_at = NULL WHERE id = ? AND agent_id = ? AND archived_at IS NOT NULL",
             (memory_id, agent_id),
         )
-        return cursor.rowcount > 0
+        restored = cursor.rowcount > 0
+
+    if restored:
+        emit(MEMORY_RESTORED, {"id": memory_id, "agent_id": agent_id})
+
+    return restored
 
 
 def get_archived(agent_id: str = "default", limit: int = 50) -> list[MemoryRecord]:
@@ -800,6 +821,7 @@ def _count_active_memories(query: str, category: str | None, agent_id: str) -> i
                 WHERE memories_fts MATCH :query
                   AND m.agent_id = :agent_id
                   AND m.compressed_into IS NULL
+                  AND m.archived_at IS NULL
                   AND m.decay_score >= 0.05
                   AND (m.expires_at IS NULL OR m.expires_at > datetime('now'))
             """
@@ -811,6 +833,7 @@ def _count_active_memories(query: str, category: str | None, agent_id: str) -> i
                 WHERE content LIKE :query ESCAPE '\\'
                   AND agent_id = :agent_id
                   AND compressed_into IS NULL
+                  AND archived_at IS NULL
                   AND decay_score >= 0.05
                   AND (expires_at IS NULL OR expires_at > datetime('now'))
             """
