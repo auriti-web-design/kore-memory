@@ -11,6 +11,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-02-27
+
+### Theme: "Performance"
+
+### Added
+- **sqlite-vec native vector search** — Vector search now runs directly in SQLite via `vec0` virtual table with `distance_metric=cosine` and `partition key` by agent_id. Eliminates loading all embeddings into RAM. Falls back to numpy in-memory index if sqlite-vec is not installed
+- **Asymmetric search support** — New `embed_query()` function for search queries and `embed_document()` for documents, leveraging sentence-transformers v5 `encode_query()`/`encode_document()` when the model supports asymmetric prompts
+- **ONNX backend support** — Set `KORE_EMBED_BACKEND=onnx` to use ONNX Runtime for faster embedding inference (requires `pip install 'sentence-transformers[onnx]'`)
+- **`get_dimensions()` helper** — Returns the embedding dimension of the current model
+- **Chunked compressor** — Compressor now processes large datasets (>2000 vectors) in chunks to avoid O(n²) memory usage. Supports 100K+ memories without OOM
+
+### Changed
+- **Repository refactored** — Monolithic `repository.py` (979 lines) split into 5 focused modules: `repository/memory.py` (CRUD), `repository/search.py` (FTS5, semantic, tag, timeline), `repository/lifecycle.py` (decay, archive, cleanup), `repository/graph.py` (tags, relations), `repository/sessions.py` (session management). Full backward compatibility via `__init__.py` re-exports
+- **Atomic updates** — `update_memory()` now uses a single `UPDATE ... WHERE` query instead of read-then-write, eliminating race conditions
+- **sqlite-vec added to `[semantic]` optional dependency** — `pip install 'kore-memory[semantic]'` now includes sqlite-vec
+- **sqlite-vec extension auto-loaded** on every database connection for native vector operations
+
+---
+
 ## [1.2.0] - 2026-02-27
 
 ### Theme: "Developer Experience"

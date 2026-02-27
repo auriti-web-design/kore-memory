@@ -168,22 +168,40 @@ def _find_clusters(memories: list[dict]) -> list[list[dict]]:
         return _find_clusters_python(valid_memories, vectors)
 
 
+_CHUNK_SIZE = 2000  # Max vectors per chunk to avoid OOM on large datasets
+
+
 def _find_clusters_numpy(
     memories: list[dict],
     vectors: dict[int, list[float]],
 ) -> list[list[dict]]:
     """
-    Numpy-accelerated clustering: build similarity matrix via matrix multiplication,
-    then extract pairs above threshold from the upper triangle.
+    Numpy-accelerated clustering with chunked processing.
+
+    For datasets up to CHUNK_SIZE: full n×n similarity matrix (fast, O(n²) memory).
+    For larger datasets: chunked processing computes similarity in blocks,
+    keeping memory usage bounded at O(CHUNK_SIZE × n) per iteration.
     """
+    n = len(memories)
     mem_ids = [m["id"] for m in memories]
     matrix = np.array([vectors[mid] for mid in mem_ids], dtype=np.float32)
 
-    # Similarity matrix: since vectors are normalized, dot product = cosine similarity
+    if n <= _CHUNK_SIZE:
+        # Small dataset: full similarity matrix in one shot
+        return _cluster_full_matrix(memories, matrix, n)
+
+    # Large dataset: chunked row-by-row similarity computation
+    return _cluster_chunked(memories, matrix, n)
+
+
+def _cluster_full_matrix(
+    memories: list[dict],
+    matrix: np.ndarray,
+    n: int,
+) -> list[list[dict]]:
+    """Full n×n similarity matrix clustering (for small datasets)."""
     sim_matrix = matrix @ matrix.T  # shape: (n, n)
 
-    # Build adjacency from upper triangle (i < j) where similarity >= threshold
-    n = len(memories)
     used: set[int] = set()
     clusters: list[list[dict]] = []
 
@@ -191,18 +209,60 @@ def _find_clusters_numpy(
         if i in used:
             continue
 
+        # Vectorized: find all j > i with similarity >= threshold
+        sims = sim_matrix[i, i + 1:]
+        similar_mask = sims >= SIMILARITY_THRESHOLD
+        similar_indices = np.where(similar_mask)[0] + (i + 1)
+
+        # Filter out already used indices
         cluster_indices = [i]
-        # Find all j > i similar to i (greedy: cluster around first unseen)
-        for j in range(i + 1, n):
-            if j in used:
-                continue
-            if sim_matrix[i, j] >= SIMILARITY_THRESHOLD:
-                cluster_indices.append(j)
+        for j in similar_indices:
+            if j not in used:
+                cluster_indices.append(int(j))
 
         if len(cluster_indices) > 1:
             for idx in cluster_indices:
                 used.add(idx)
             clusters.append([memories[idx] for idx in cluster_indices])
+
+    return clusters
+
+
+def _cluster_chunked(
+    memories: list[dict],
+    matrix: np.ndarray,
+    n: int,
+) -> list[list[dict]]:
+    """Chunked similarity computation for large datasets (>CHUNK_SIZE vectors)."""
+    used: set[int] = set()
+    clusters: list[list[dict]] = []
+
+    for chunk_start in range(0, n, _CHUNK_SIZE):
+        chunk_end = min(chunk_start + _CHUNK_SIZE, n)
+
+        # Compute similarity between chunk rows and ALL columns
+        chunk_matrix = matrix[chunk_start:chunk_end]  # shape: (chunk, dim)
+        sim_block = chunk_matrix @ matrix.T  # shape: (chunk, n)
+
+        for local_i in range(chunk_end - chunk_start):
+            global_i = chunk_start + local_i
+            if global_i in used:
+                continue
+
+            # Only look at j > global_i to avoid double-counting
+            sims = sim_block[local_i, global_i + 1:]
+            similar_mask = sims >= SIMILARITY_THRESHOLD
+            similar_indices = np.where(similar_mask)[0] + (global_i + 1)
+
+            cluster_indices = [global_i]
+            for j in similar_indices:
+                if j not in used:
+                    cluster_indices.append(int(j))
+
+            if len(cluster_indices) > 1:
+                for idx in cluster_indices:
+                    used.add(idx)
+                clusters.append([memories[idx] for idx in cluster_indices])
 
     return clusters
 

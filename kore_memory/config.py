@@ -46,6 +46,7 @@ RATE_LIMITS: dict[str, tuple[int, int]] = {
 
 EMBED_MODEL = os.getenv("KORE_EMBED_MODEL", "paraphrase-multilingual-MiniLM-L12-v2")
 MAX_EMBED_CHARS = int(os.getenv("KORE_MAX_EMBED_CHARS", "8000"))
+EMBED_BACKEND = os.getenv("KORE_EMBED_BACKEND", "")  # "onnx" for ONNX backend
 
 # ── Compressor ────────────────────────────────────────────────────────────────
 
@@ -65,4 +66,4 @@ AUDIT_LOG = os.getenv("KORE_AUDIT_LOG", "0") == "1"
 
 # ── Version ───────────────────────────────────────────────────────────────────
 
-VERSION = "1.2.0"
+VERSION = "1.3.0"

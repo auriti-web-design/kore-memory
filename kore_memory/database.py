@@ -14,6 +14,26 @@ from . import config
 
 _POOL_SIZE = 4
 
+# --- sqlite-vec availability ---
+try:
+    import sqlite_vec
+
+    _HAS_SQLITE_VEC = True
+except ImportError:
+    _HAS_SQLITE_VEC = False
+
+
+def _load_sqlite_vec(conn: sqlite3.Connection) -> None:
+    """Load sqlite-vec extension on a connection (idempotent, silent if unavailable)."""
+    if not _HAS_SQLITE_VEC:
+        return
+    try:
+        conn.enable_load_extension(True)
+        sqlite_vec.load(conn)
+        conn.enable_load_extension(False)
+    except Exception:
+        pass  # already loaded or not available
+
 
 def _get_db_path() -> Path:
     """Risolve il path del DB a runtime (supporta override via KORE_DB_PATH)."""
@@ -62,6 +82,8 @@ class _ConnectionPool:
         conn.execute("PRAGMA temp_store=MEMORY")
         conn.execute("PRAGMA mmap_size=268435456")  # 256MB mmap
         conn.execute("PRAGMA cache_size=-32000")  # 32MB cache
+        # Load sqlite-vec extension if available
+        _load_sqlite_vec(conn)
         return conn
 
     def release(self, db_path: str, conn: sqlite3.Connection) -> None:
@@ -195,6 +217,19 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_event_logs_event   ON event_logs (event);
             CREATE INDEX IF NOT EXISTS idx_event_logs_created ON event_logs (created_at DESC);
         """)
+
+        # Create sqlite-vec virtual table if extension is available
+        if _HAS_SQLITE_VEC:
+            try:
+                embed_dim = int(os.getenv("KORE_EMBED_DIM", "384"))
+                conn.execute(f"""
+                    CREATE VIRTUAL TABLE IF NOT EXISTS vec_memories USING vec0(
+                        agent_id TEXT partition key,
+                        embedding float[{embed_dim}] distance_metric=cosine
+                    )
+                """)
+            except Exception:
+                pass  # extension not loaded on this connection
 
         # Migrazione: aggiungi expires_at se mancante (DB pre-esistenti)
         cols = {row[1] for row in conn.execute("PRAGMA table_info(memories)").fetchall()}
