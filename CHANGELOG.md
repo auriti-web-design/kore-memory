@@ -11,6 +11,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-02-27
+
+### Theme: "Intelligence"
+
+### Added
+- **Graph RAG with recursive CTE** — `GET /graph/traverse?start_id=X&depth=3` traverses the memory relation graph up to 10 hops using SQLite recursive CTE. Returns connected nodes, edges, and hop distance. Supports `relation_type` filter
+- **Memory summarization (TF-IDF)** — `GET /summarize?topic=X` extracts keywords from related memories using TF-IDF scoring (no LLM). Returns top keywords, category breakdown, importance average, and time span
+- **Multi-agent shared memory with ACL** — `POST /memories/{id}/acl` grants read/write/admin access to other agents. `DELETE /memories/{id}/acl/{agent}` revokes. `GET /shared` lists memories shared with the requesting agent. New `memory_acl` table with permission hierarchy
+- **SSE streaming search** — `GET /stream/search?q=X` returns Server-Sent Events with FTS5 results first, then semantic results. Deduplicates across phases. Events: `fts`, `semantic`, `done`
+- **Analytics endpoint** — `GET /analytics` returns comprehensive stats: category distribution, decay analysis (healthy/fading/critical), top tags, access patterns, 30-day growth, compression and archive stats, relation count
+- **GDPR right to erasure** — `DELETE /memories/agent/{agent_id}` permanently deletes all agent data: memories, tags, relations, ACL entries, sessions, and audit events. Self-deletion only (agent must match)
+- **Plugin system** — `KorePlugin` abstract base class with 8 hook points: `pre_save`, `post_save`, `pre_search`, `post_search`, `pre_delete`, `post_delete`, `pre_compress`, `post_compress`. Register via `register_plugin()`. `GET /plugins` lists registered plugins
+- **New Pydantic models**: `GraphTraverseResponse`, `SummarizeResponse`, `ACLGrantRequest`, `ACLResponse`, `SharedMemoriesResponse`, `AnalyticsResponse`, `GDPRDeleteResponse`, `PluginListResponse`
+
+### Stats
+- 426 tests, all passing
+- 7 new endpoints, 4 new modules
+- New files: `summarizer.py`, `acl.py`, `analytics.py`, `plugins.py`
+
+---
+
 ## [1.3.0] - 2026-02-27
 
 ### Theme: "Performance"

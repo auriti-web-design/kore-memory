@@ -16,15 +16,18 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import Response
+from starlette.responses import Response, StreamingResponse
 
 from . import config
 from .auth import get_agent_id, require_auth
 from .dashboard import get_dashboard_html
 from .database import init_db
 from .models import (
+    ACLGrantRequest,
+    ACLResponse,
     AgentListResponse,
     AgentRecord,
+    AnalyticsResponse,
     ArchiveResponse,
     AuditResponse,
     AutoTuneResponse,
@@ -35,6 +38,8 @@ from .models import (
     DecayRunResponse,
     EntityListResponse,
     EntityRecord,
+    GDPRDeleteResponse,
+    GraphTraverseResponse,
     MemoryExportResponse,
     MemoryImportRequest,
     MemoryImportResponse,
@@ -43,6 +48,7 @@ from .models import (
     MemorySaveResponse,
     MemorySearchResponse,
     MemoryUpdateRequest,
+    PluginListResponse,
     RelationRequest,
     RelationResponse,
     ScoringStatsResponse,
@@ -50,6 +56,8 @@ from .models import (
     SessionDeleteResponse,
     SessionResponse,
     SessionSummaryResponse,
+    SharedMemoriesResponse,
+    SummarizeResponse,
     TagRequest,
     TagResponse,
 )
@@ -80,6 +88,7 @@ from .repository import (
     save_memory_batch,
     search_by_tag,
     search_memories,
+    traverse_graph,
     update_memory,
 )
 
@@ -712,6 +721,258 @@ def entities_list(
         entities=[EntityRecord(**r) for r in results],
         total=len(results),
     )
+
+
+# ── Graph RAG ────────────────────────────────────────────────────────────────
+
+
+@app.get("/graph/traverse", response_model=GraphTraverseResponse)
+def graph_traverse(
+    start_id: int = Query(..., description="Starting memory ID"),
+    depth: int = Query(3, ge=1, le=10, description="Max traversal depth"),
+    relation_type: str | None = Query(None, description="Filter by relation type"),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> GraphTraverseResponse:
+    """Multi-hop graph traversal using recursive CTE. Returns connected memories up to N hops."""
+    result = traverse_graph(start_id, agent_id=agent_id, depth=depth, relation_type=relation_type)
+    return GraphTraverseResponse(**result)
+
+
+# ── Summarization ────────────────────────────────────────────────────────────
+
+
+@app.get("/summarize", response_model=SummarizeResponse)
+def summarize(
+    topic: str = Query(..., min_length=1, description="Topic to summarize"),
+    limit: int = Query(50, ge=1, le=200),
+    top_keywords: int = Query(10, ge=1, le=50),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> SummarizeResponse:
+    """Summarize memories about a topic using TF-IDF keyword extraction (no LLM)."""
+    from .summarizer import summarize_topic
+
+    result = summarize_topic(topic, agent_id=agent_id, limit=limit, top_keywords=top_keywords)
+    return SummarizeResponse(**result)
+
+
+# ── ACL (multi-agent shared memory) ──────────────────────────────────────────
+
+
+@app.post("/memories/{memory_id}/acl", response_model=ACLResponse, status_code=201)
+def acl_grant(
+    memory_id: int,
+    req: ACLGrantRequest,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> ACLResponse:
+    """Grant access to a memory for another agent. Only owner or admin can grant."""
+    from .acl import grant_access, list_permissions
+
+    success = grant_access(memory_id, req.target_agent, req.permission, grantor_agent=agent_id)
+    if not success:
+        raise HTTPException(403, "Not authorized to grant access or memory not found")
+    perms = list_permissions(memory_id, agent_id)
+    return ACLResponse(success=True, permissions=perms)
+
+
+@app.delete("/memories/{memory_id}/acl/{target_agent}", response_model=ACLResponse)
+def acl_revoke(
+    memory_id: int,
+    target_agent: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> ACLResponse:
+    """Revoke access for an agent. Only owner or admin can revoke."""
+    from .acl import list_permissions, revoke_access
+
+    success = revoke_access(memory_id, target_agent, grantor_agent=agent_id)
+    if not success:
+        raise HTTPException(403, "Not authorized to revoke access or no permission found")
+    perms = list_permissions(memory_id, agent_id)
+    return ACLResponse(success=True, permissions=perms)
+
+
+@app.get("/memories/{memory_id}/acl", response_model=ACLResponse)
+def acl_list(
+    memory_id: int,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> ACLResponse:
+    """List all permissions for a memory. Only visible to owner or admin."""
+    from .acl import list_permissions
+
+    perms = list_permissions(memory_id, agent_id)
+    return ACLResponse(success=True, permissions=perms)
+
+
+@app.get("/shared", response_model=SharedMemoriesResponse)
+def shared_memories(
+    limit: int = Query(50, ge=1, le=200),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> SharedMemoriesResponse:
+    """Get all memories shared with this agent by other agents."""
+    from .acl import get_shared_memories
+
+    results = get_shared_memories(agent_id, limit=limit)
+    return SharedMemoriesResponse(memories=results, total=len(results))
+
+
+# ── SSE Streaming Search ─────────────────────────────────────────────────────
+
+
+@app.get("/stream/search")
+async def stream_search(
+    request: Request,
+    q: str = Query(..., min_length=1, description="Search query"),
+    limit: int = Query(10, ge=1, le=50),
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> StreamingResponse:
+    """Server-Sent Events streaming search. FTS5 results first, then semantic."""
+    import asyncio
+    import json
+
+    async def event_stream():
+        # Phase 1: FTS5 results (fast)
+        fts_results, _, fts_total = search_memories(
+            query=q, limit=limit, semantic=False, agent_id=agent_id,
+        )
+        fts_data = {
+            "results": [r.model_dump(mode="json") for r in fts_results],
+            "total": fts_total,
+            "phase": "fts",
+        }
+        yield f"event: fts\ndata: {json.dumps(fts_data)}\n\n"
+
+        # Small delay to allow client to process FTS
+        await asyncio.sleep(0.05)
+
+        # Phase 2: Semantic results (slower, may overlap with FTS)
+        try:
+            sem_results, _, sem_total = search_memories(
+                query=q, limit=limit, semantic=True, agent_id=agent_id,
+            )
+            # Deduplicate — exclude IDs already sent in FTS phase
+            fts_ids = {r.id for r in fts_results}
+            new_results = [r for r in sem_results if r.id not in fts_ids]
+            sem_data = {
+                "results": [r.model_dump(mode="json") for r in new_results],
+                "total": sem_total,
+                "phase": "semantic",
+            }
+            yield f"event: semantic\ndata: {json.dumps(sem_data)}\n\n"
+        except Exception:
+            err_data = {"results": [], "total": 0, "phase": "semantic", "error": "unavailable"}
+            yield f"event: semantic\ndata: {json.dumps(err_data)}\n\n"
+
+        # Done signal
+        yield "event: done\ndata: {}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ── Analytics ────────────────────────────────────────────────────────────────
+
+
+@app.get("/analytics", response_model=AnalyticsResponse)
+def analytics(
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> AnalyticsResponse:
+    """Comprehensive analytics: categories, decay, tags, access patterns, growth."""
+    from .analytics import get_analytics
+
+    return AnalyticsResponse(**get_analytics(agent_id=agent_id))
+
+
+# ── GDPR / Right to Erasure ──────────────────────────────────────────────────
+
+
+@app.delete("/memories/agent/{target_agent}", response_model=GDPRDeleteResponse)
+def gdpr_delete_agent(
+    target_agent: str,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> GDPRDeleteResponse:
+    """GDPR Article 17 — Right to erasure. Permanently deletes ALL data for an agent.
+    The requesting agent must match the target agent (self-deletion only)."""
+    if agent_id != target_agent:
+        raise HTTPException(403, "Can only delete your own agent data")
+
+    from .database import get_connection
+
+    with get_connection() as conn:
+        # Count before deletion
+        mem_count = conn.execute(
+            "SELECT COUNT(*) FROM memories WHERE agent_id = ?", (target_agent,)
+        ).fetchone()[0]
+
+        # Delete in dependency order
+        # Tags and relations cascade from memories, but be explicit
+        tag_count = conn.execute(
+            "DELETE FROM memory_tags WHERE memory_id IN (SELECT id FROM memories WHERE agent_id = ?)",
+            (target_agent,),
+        ).rowcount
+
+        rel_count = conn.execute(
+            """DELETE FROM memory_relations WHERE
+               source_id IN (SELECT id FROM memories WHERE agent_id = ?)
+               OR target_id IN (SELECT id FROM memories WHERE agent_id = ?)""",
+            (target_agent, target_agent),
+        ).rowcount
+
+        # Delete ACL entries if table exists
+        try:
+            conn.execute(
+                "DELETE FROM memory_acl WHERE agent_id = ? OR granted_by = ?",
+                (target_agent, target_agent),
+            )
+        except Exception:
+            pass  # ACL table may not exist yet
+
+        # Delete vec_memories if sqlite-vec available
+        try:
+            conn.execute("DELETE FROM vec_memories WHERE agent_id = ?", (target_agent,))
+        except Exception:
+            pass
+
+        # Delete FTS entries (triggers handle this on memory delete)
+        conn.execute("DELETE FROM memories WHERE agent_id = ?", (target_agent,))
+
+        session_count = conn.execute(
+            "DELETE FROM sessions WHERE agent_id = ?", (target_agent,)
+        ).rowcount
+
+        event_count = conn.execute(
+            "DELETE FROM event_logs WHERE agent_id = ?", (target_agent,)
+        ).rowcount
+
+    return GDPRDeleteResponse(
+        deleted_memories=mem_count,
+        deleted_tags=tag_count,
+        deleted_relations=rel_count,
+        deleted_sessions=session_count,
+        deleted_events=event_count,
+    )
+
+
+# ── Plugins ──────────────────────────────────────────────────────────────────
+
+
+@app.get("/plugins", response_model=PluginListResponse)
+def plugins_list(_: str = _Auth) -> PluginListResponse:
+    """List registered plugins."""
+    from .plugins import list_plugins
+
+    names = list_plugins()
+    return PluginListResponse(plugins=names, total=len(names))
 
 
 # ── Agents ────────────────────────────────────────────────────────────────────

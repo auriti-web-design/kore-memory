@@ -252,3 +252,120 @@ class AuditEventRecord(BaseModel):
 class AuditResponse(BaseModel):
     events: list[AuditEventRecord]
     total: int
+
+
+# ── Graph RAG ────────────────────────────────────────────────────────────────
+
+
+class GraphNodeRecord(BaseModel):
+    id: int
+    content: str
+    category: str
+    importance: int
+    decay_score: float
+    created_at: str
+    hop: int
+
+
+class GraphEdgeRecord(BaseModel):
+    source_id: int
+    target_id: int
+    relation: str
+    created_at: str
+
+
+class GraphTraverseResponse(BaseModel):
+    start: dict | None = None
+    nodes: list[GraphNodeRecord] = []
+    edges: list[GraphEdgeRecord] = []
+    depth: int
+
+
+# ── Summarization ────────────────────────────────────────────────────────────
+
+
+class KeywordRecord(BaseModel):
+    word: str
+    score: float
+
+
+class SummarizeResponse(BaseModel):
+    topic: str
+    memory_count: int
+    keywords: list[KeywordRecord] = []
+    categories: dict[str, int] = {}
+    avg_importance: float = 0.0
+    time_span: dict[str, str] | None = None
+
+
+# ── ACL ──────────────────────────────────────────────────────────────────────
+
+
+class ACLGrantRequest(BaseModel):
+    target_agent: str = Field(..., min_length=1, max_length=64)
+    permission: str = Field("read", pattern=r"^(read|write|admin)$")
+
+
+class ACLRecord(BaseModel):
+    agent_id: str
+    permission: str
+    granted_by: str
+    created_at: str
+
+
+class ACLResponse(BaseModel):
+    success: bool
+    permissions: list[ACLRecord] = []
+
+
+class SharedMemoryRecord(BaseModel):
+    id: int
+    content: str
+    category: str
+    importance: int
+    decay_score: float
+    created_at: str
+    updated_at: str
+    owner_agent: str
+    permission: str
+
+
+class SharedMemoriesResponse(BaseModel):
+    memories: list[SharedMemoryRecord]
+    total: int
+
+
+# ── Analytics ────────────────────────────────────────────────────────────────
+
+
+class AnalyticsResponse(BaseModel):
+    total_memories: int
+    categories: dict[str, int]
+    importance_distribution: dict[str, int]
+    decay_analysis: dict[str, float | int]
+    top_tags: list[dict]
+    access_patterns: dict[str, float | int]
+    growth_last_30d: list[dict]
+    compressed_memories: int
+    archived_memories: int
+    total_relations: int
+
+
+# ── GDPR ─────────────────────────────────────────────────────────────────────
+
+
+class GDPRDeleteResponse(BaseModel):
+    deleted_memories: int
+    deleted_tags: int
+    deleted_relations: int
+    deleted_sessions: int
+    deleted_events: int
+    message: str = "All agent data permanently deleted"
+
+
+# ── Plugins ──────────────────────────────────────────────────────────────────
+
+
+class PluginListResponse(BaseModel):
+    plugins: list[str]
+    total: int

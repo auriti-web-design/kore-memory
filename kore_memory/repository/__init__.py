@@ -11,7 +11,7 @@ The monolithic repository.py has been split into:
 """
 
 # ruff: noqa: F401 — re-exports for backward compatibility
-from .graph import add_relation, add_tags, get_relations, get_tags, remove_tags
+from .graph import add_relation, add_tags, get_relations, get_tags, remove_tags, traverse_graph
 from .lifecycle import (
     _compress_lock,
     _decay_lock,
@@ -83,6 +83,7 @@ __all__ = [
     "get_tags",
     "add_relation",
     "get_relations",
+    "traverse_graph",
     # Sessions
     "create_session",
     "list_sessions",
