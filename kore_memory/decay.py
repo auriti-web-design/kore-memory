@@ -57,8 +57,8 @@ def compute_decay(
 
 def effective_score(decay_score: float, importance: int) -> float:
     """
-    Combined relevance score used for ranking search results.
-    Balances semantic similarity with memory freshness and importance.
+    Decay × importance weight used for ranking search results.
+    Multiplied by similarity score (when available) in repository.search_memories().
     """
     importance_weight = importance / 5.0  # normalize to 0.2–1.0
     return round(decay_score * importance_weight, 4)

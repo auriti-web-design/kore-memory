@@ -9,12 +9,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+---
+
+## [1.0.2] - 2026-02-27
+
 ### Fixed
+- **Search ranking** — Semantic search now includes similarity score in final ranking (`similarity × decay × importance_weight`). Previously similarity was used only for shortlisting, then discarded during re-ranking.
 - **CI: root cause "no such table: memories"** — `test_auth_events.py` removed `KORE_DB_PATH` from env after each test (`os.environ.pop`), breaking all subsequent tests. Now saves and restores the original path.
 - **CI: ruff lint** — Fixed 13 lint errors (E501 line-too-long, E402 import order, B904 raise from None, SIM108 ternary, W291 trailing whitespace). Applied `ruff format` on 15 files.
 - **CI: MCP test skip** — Added `pytest.importorskip("mcp")` so MCP tests are skipped when the optional dependency is not installed.
 - **CI: coverage threshold** — Adjusted from 85% to 80% (actual: 80.8%).
 - **Test isolation** — `test_sessions.py` fixture now restores `KORE_DB_PATH` after per-test DB override. Added session-scoped DB verification fixture in `conftest.py`.
+
+### Added
+- `article-devto.md` — Dev.to article (draft) aligned with actual codebase implementation.
 
 ---
 

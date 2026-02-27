@@ -194,9 +194,14 @@ def search_memories(
     else:
         results = _fts_search(query, fetch_limit, category, agent_id, cursor)
 
-    # Filter forgotten memories, re-rank by effective score
+    # Filter forgotten memories, re-rank by combined score:
+    # similarity (semantic) × decay × importance_weight
     alive = [r for r in results if not should_forget(r.decay_score or 1.0)]
-    alive.sort(key=lambda r: effective_score(r.decay_score or 1.0, r.importance), reverse=True)
+    alive.sort(
+        key=lambda r: (r.score if r.score and r.score > 0 else 1.0)
+        * effective_score(r.decay_score or 1.0, r.importance),
+        reverse=True,
+    )
 
     # Get total count of matching active memories
     total_count = _count_active_memories(query, category, agent_id)
