@@ -21,6 +21,22 @@ Category = Literal[
 
 
 class MemorySaveRequest(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "content": "Il progetto usa FastAPI con SQLite per la persistenza",
+                    "category": "project",
+                    "importance": 4,
+                },
+                {
+                    "content": "Riunione con il team alle 15:00",
+                    "category": "task",
+                },
+            ]
+        }
+    }
+
     content: str = Field(..., min_length=3, max_length=4000)
     category: Category = Field("general")
     importance: int | None = Field(None, ge=1, le=5, description="None=auto-scored, 1-5=explicit")
@@ -48,6 +64,23 @@ class MemoryUpdateRequest(BaseModel):
 
 
 class MemoryRecord(BaseModel):
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "id": 42,
+                    "content": "Il progetto usa FastAPI con SQLite",
+                    "category": "project",
+                    "importance": 4,
+                    "decay_score": 0.95,
+                    "created_at": "2026-01-15T10:30:00",
+                    "updated_at": "2026-01-15T10:30:00",
+                    "score": 3.8,
+                }
+            ]
+        }
+    }
+
     id: int
     content: str
     category: str

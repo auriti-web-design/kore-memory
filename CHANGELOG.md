@@ -11,6 +11,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-02-27
+
+### Theme: "Developer Experience"
+
+### Added
+- **GET /memories/{id}** — New endpoint to retrieve a single memory by ID with agent isolation
+- **PydanticAI integration** — `kore_toolset()` and `create_kore_tools()` for PydanticAI agents (`kore_memory.integrations.pydantic_ai`)
+- **OpenAI Agents SDK integration** — `kore_agent_tools()` with `@function_tool` decorators (`kore_memory.integrations.openai_agents`)
+- **LangChain v0.3+ BaseChatMessageHistory** — `KoreChatMessageHistory` for use with `RunnableWithMessageHistory`
+- **MCP Streamable HTTP transport** — `kore-mcp --transport streamable-http` for network access (not just stdio)
+- **SDK cursor pagination** — `cursor` parameter in `search()` and `timeline()` (sync + async clients)
+- **SDK `get()` method** — New `get(memory_id)` method in `KoreClient` and `AsyncKoreClient`
+- **OpenAPI examples** — `json_schema_extra` with examples for `MemorySaveRequest` and `MemoryRecord`
+- **Optional dependencies** — `pydantic-ai` and `openai-agents` extras in pyproject.toml
+
+### Changed
+- **SDK importance default** — `KoreClient.save()` and `AsyncKoreClient.save()` now default to `importance=None` (auto-scoring) instead of `importance=1`
+- **LangChain auto_importance** — `KoreLangChainMemory.save_context()` passes `importance=None` when auto_importance=True
+
+### Tests
+- 24 new tests for v1.2.0 features (`test_v12_features.py`)
+- Updated 5 LangChain tests for new importance=None default
+
+---
+
 ## [1.1.0] - 2026-02-27
 
 ### Theme: "Stability"

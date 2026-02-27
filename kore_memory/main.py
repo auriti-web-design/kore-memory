@@ -38,6 +38,7 @@ from .models import (
     MemoryExportResponse,
     MemoryImportRequest,
     MemoryImportResponse,
+    MemoryRecord,
     MemorySaveRequest,
     MemorySaveResponse,
     MemorySearchResponse,
@@ -63,6 +64,7 @@ from .repository import (
     end_session,
     export_memories,
     get_archived,
+    get_memory,
     get_relations,
     get_session_memories,
     get_session_summary,
@@ -373,6 +375,19 @@ def timeline(
         has_more=next_cursor is not None,
         offset=offset,
     )
+
+
+@app.get("/memories/{memory_id}", response_model=MemoryRecord)
+def get_single(
+    memory_id: int,
+    _: str = _Auth,
+    agent_id: str = _Agent,
+) -> MemoryRecord:
+    """Get a single memory by ID. Agents can only access their own memories."""
+    memory = get_memory(memory_id, agent_id=agent_id)
+    if not memory:
+        raise HTTPException(status_code=404, detail="Memory not found")
+    return memory
 
 
 @app.put("/memories/{memory_id}", response_model=MemorySaveResponse)

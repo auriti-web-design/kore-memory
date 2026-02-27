@@ -294,6 +294,29 @@ def update_memory(memory_id: int, req: MemoryUpdateRequest, agent_id: str = "def
     return True
 
 
+def get_memory(memory_id: int, agent_id: str = "default") -> MemoryRecord | None:
+    """Recupera una singola memoria per ID, scoped all'agent. None se non trovata."""
+    with get_connection() as conn:
+        row = conn.execute(
+            """SELECT id, content, category, importance, decay_score,
+                      created_at, updated_at
+               FROM memories
+               WHERE id = ? AND agent_id = ? AND archived_at IS NULL""",
+            (memory_id, agent_id),
+        ).fetchone()
+    if not row:
+        return None
+    return MemoryRecord(
+        id=row["id"],
+        content=row["content"],
+        category=row["category"],
+        importance=row["importance"],
+        decay_score=row["decay_score"],
+        created_at=row["created_at"],
+        updated_at=row["updated_at"],
+    )
+
+
 def delete_memory(memory_id: int, agent_id: str = "default") -> bool:
     """Delete a memory by id, scoped to agent. Returns True if deleted."""
     with get_connection() as conn:

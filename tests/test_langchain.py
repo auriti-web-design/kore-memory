@@ -260,7 +260,7 @@ class TestSaveContext:
         mock_client.save.assert_called_once_with(
             content="Human: What is Kore?\nAI: Kore is a memory layer for AI agents.",
             category="general",
-            importance=1,
+            importance=None,
         )
 
     def test_save_uses_custom_keys(self):
@@ -280,7 +280,7 @@ class TestSaveContext:
         mock_client.save.assert_called_once_with(
             content="Human: How does decay work?\nAI: Ebbinghaus forgetting curve.",
             category="general",
-            importance=1,
+            importance=None,
         )
 
     def test_save_uses_custom_category(self):
@@ -293,18 +293,18 @@ class TestSaveContext:
         mock_client.save.assert_called_once_with(
             content="Human: test\nAI: response",
             category="project",
-            importance=1,
+            importance=None,
         )
 
     def test_save_auto_importance_enabled(self):
-        """Con auto_importance=True, importance viene inviata come 1 (auto-scored)."""
+        """Con auto_importance=True, importance viene inviata come None (auto-scored dal server)."""
         mock_client = _make_mock_client()
         mem = _make_memory(client=mock_client, auto_importance=True)
 
         mem.save_context({"input": "test"}, {"output": "response"})
 
         call_kwargs = mock_client.save.call_args[1]
-        assert call_kwargs["importance"] == 1
+        assert call_kwargs["importance"] is None
 
     def test_save_auto_importance_disabled(self):
         """Con auto_importance=False, importance viene inviata come 2."""
@@ -335,7 +335,7 @@ class TestSaveContext:
         mock_client.save.assert_called_once_with(
             content="Human: Hello",
             category="general",
-            importance=1,
+            importance=None,
         )
 
     def test_save_handles_exception(self):

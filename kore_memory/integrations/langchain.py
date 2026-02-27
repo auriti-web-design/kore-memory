@@ -1,21 +1,21 @@
 """
 Kore — LangChain Integration
-Integrazione con LangChain tramite BaseMemory.
+Integration with LangChain via BaseMemory and BaseChatMessageHistory.
 
-Permette di usare Kore come memory backend per chain e agent LangChain.
-Richiede `langchain-core>=0.2.0` (opzionale).
+Allows using Kore as a memory backend for LangChain chains and agents.
+Requires `langchain-core>=0.2.0` (optional).
 
-Uso:
+Usage (legacy BaseMemory):
     from kore_memory.integrations.langchain import KoreLangChainMemory
 
-    memory = KoreLangChainMemory(
-        base_url="http://localhost:8765",
-        agent_id="my-agent",
-        semantic=True,
-    )
-
-    # In una LangChain chain:
+    memory = KoreLangChainMemory(base_url="http://localhost:8765", agent_id="my-agent")
     chain = LLMChain(llm=llm, prompt=prompt, memory=memory)
+
+Usage (LangChain v0.3+ BaseChatMessageHistory):
+    from kore_memory.integrations.langchain import KoreChatMessageHistory
+
+    history = KoreChatMessageHistory(session_id="conv-1", agent_id="my-agent")
+    chain = RunnableWithMessageHistory(llm, lambda sid: KoreChatMessageHistory(session_id=sid))
 """
 
 from __future__ import annotations
@@ -30,6 +30,15 @@ try:
 except ImportError:
     _HAS_LANGCHAIN = False
     BaseMemory = object  # type: ignore[assignment,misc]
+
+try:
+    from langchain_core.chat_history import BaseChatMessageHistory
+    from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+
+    _HAS_CHAT_HISTORY = True
+except ImportError:
+    _HAS_CHAT_HISTORY = False
+    BaseChatMessageHistory = object  # type: ignore[assignment,misc]
 
 from kore_memory.client import KoreClient
 
@@ -169,8 +178,8 @@ class KoreLangChainMemory(BaseMemory):  # type: ignore[misc]
 
         content = "\n".join(parts)
 
-        # Importance 1 = auto-scored dal server se auto_importance e' abilitato
-        importance = 1 if self._auto_importance else 2
+        # None = auto-scored dal server, esplicito altrimenti
+        importance = None if self._auto_importance else 2
 
         try:
             self._client.save(
@@ -200,3 +209,99 @@ class KoreLangChainMemory(BaseMemory):  # type: ignore[misc]
         # Fallback: concatena tutti i valori stringa dell'input
         text_parts = [str(v) for v in inputs.values() if isinstance(v, str)]
         return " ".join(text_parts)
+
+
+# ── LangChain v0.3+ BaseChatMessageHistory ────────────────────────────────────
+
+
+class KoreChatMessageHistory(BaseChatMessageHistory):  # type: ignore[misc]
+    """
+    LangChain v0.3+ chat message history backed by Kore Memory.
+
+    Each message is saved as an individual memory. Compatible with
+    RunnableWithMessageHistory for session management.
+
+    Args:
+        session_id: Conversation session ID.
+        base_url: Kore server URL (default: http://localhost:8765).
+        api_key: API key for authentication (optional on localhost).
+        agent_id: Agent namespace (default: "default").
+        category: Category for saved memories (default: "general").
+    """
+
+    def __init__(
+        self,
+        session_id: str,
+        base_url: str = "http://localhost:8765",
+        api_key: str | None = None,
+        agent_id: str = "default",
+        category: str = "general",
+        *,
+        client: KoreClient | None = None,
+    ):
+        if not _HAS_CHAT_HISTORY:
+            raise ImportError(
+                "langchain-core>=0.3.0 is required for KoreChatMessageHistory. "
+                "Install with: pip install 'kore-memory[langchain]'"
+            )
+
+        self._session_id = session_id
+        self._agent_id = agent_id
+        self._category = category
+        self._client = client or KoreClient(
+            base_url=base_url,
+            api_key=api_key,
+            agent_id=agent_id,
+        )
+
+    @property
+    def messages(self) -> list[BaseMessage]:  # type: ignore[override]
+        """Retrieve all messages for this session from Kore."""
+        try:
+            response = self._client.search(
+                q="*",
+                limit=100,
+                semantic=False,
+            )
+            msgs: list[BaseMessage] = []
+            for mem in response.results:
+                content = mem.content
+                # Reconstruct message type from prefix
+                if content.startswith("Human: "):
+                    msgs.append(HumanMessage(content=content[7:]))
+                elif content.startswith("AI: "):
+                    msgs.append(AIMessage(content=content[4:]))
+                else:
+                    # Generic message — treat as human
+                    msgs.append(HumanMessage(content=content))
+            return msgs
+        except Exception:
+            logger.warning("Kore chat history retrieval failed", exc_info=True)
+            return []
+
+    def add_messages(self, messages: list[BaseMessage]) -> None:  # type: ignore[override]
+        """Save a list of messages to Kore as individual memories."""
+        for msg in messages:
+            # Add prefix to distinguish message type on retrieval
+            if isinstance(msg, HumanMessage):
+                content = f"Human: {msg.content}"
+            elif isinstance(msg, AIMessage):
+                content = f"AI: {msg.content}"
+            else:
+                content = str(msg.content)
+
+            try:
+                self._client.save(
+                    content=content,
+                    category=self._category,
+                )
+            except Exception:
+                logger.warning("Kore chat history save failed", exc_info=True)
+
+    def clear(self) -> None:
+        """
+        No-op: Kore gestisce il decay delle memorie automaticamente.
+
+        Le memorie obsolete vengono dimenticate tramite la curva di Ebbinghaus.
+        Per forzare la pulizia, usa direttamente il client Kore.
+        """

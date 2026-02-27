@@ -146,15 +146,16 @@ class KoreClient:
         self,
         content: str,
         category: str = "general",
-        importance: int = 1,
+        importance: int | None = None,
         ttl_hours: int | None = None,
     ) -> MemorySaveResponse:
-        """Saves a memory. Importance is auto-calculated when set to 1."""
+        """Saves a memory. Importance is auto-scored when None (default)."""
         payload: dict[str, Any] = {
             "content": content,
             "category": category,
-            "importance": importance,
         }
+        if importance is not None:
+            payload["importance"] = importance
         if ttl_hours is not None:
             payload["ttl_hours"] = ttl_hours
         r = self._client.post("/save", json=payload)
@@ -174,19 +175,23 @@ class KoreClient:
         self,
         q: str,
         limit: int = 5,
-        offset: int = 0,
+        cursor: str | None = None,
         category: str | None = None,
         semantic: bool = True,
+        offset: int = 0,
     ) -> MemorySearchResponse:
-        """Searches memories by meaning or text."""
+        """Searches memories by meaning or text. Uses cursor-based pagination."""
         params: dict[str, Any] = {
             "q": q,
             "limit": limit,
-            "offset": offset,
             "semantic": semantic,
         }
+        if cursor:
+            params["cursor"] = cursor
         if category:
             params["category"] = category
+        if offset:
+            params["offset"] = offset
         r = self._client.get("/search", params=params)
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
@@ -195,19 +200,27 @@ class KoreClient:
         self,
         subject: str,
         limit: int = 20,
+        cursor: str | None = None,
         offset: int = 0,
     ) -> MemorySearchResponse:
-        """Returns the memory timeline for a subject (oldest to newest)."""
-        r = self._client.get(
-            "/timeline",
-            params={
-                "subject": subject,
-                "limit": limit,
-                "offset": offset,
-            },
-        )
+        """Returns the memory timeline for a subject (oldest to newest). Uses cursor-based pagination."""
+        params: dict[str, Any] = {
+            "subject": subject,
+            "limit": limit,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        if offset:
+            params["offset"] = offset
+        r = self._client.get("/timeline", params=params)
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
+
+    def get(self, memory_id: int) -> dict[str, Any]:
+        """Gets a single memory by ID. Raises KoreNotFoundError if not found."""
+        r = self._client.get(f"/memories/{memory_id}")
+        _raise_for_status(r)
+        return r.json()
 
     def delete(self, memory_id: int) -> bool:
         """Deletes a memory. Returns True if deleted."""
@@ -356,15 +369,16 @@ class AsyncKoreClient:
         self,
         content: str,
         category: str = "general",
-        importance: int = 1,
+        importance: int | None = None,
         ttl_hours: int | None = None,
     ) -> MemorySaveResponse:
-        """Saves a memory. Importance is auto-calculated when set to 1."""
+        """Saves a memory. Importance is auto-scored when None (default)."""
         payload: dict[str, Any] = {
             "content": content,
             "category": category,
-            "importance": importance,
         }
+        if importance is not None:
+            payload["importance"] = importance
         if ttl_hours is not None:
             payload["ttl_hours"] = ttl_hours
         r = await self._client.post("/save", json=payload)
@@ -384,19 +398,23 @@ class AsyncKoreClient:
         self,
         q: str,
         limit: int = 5,
-        offset: int = 0,
+        cursor: str | None = None,
         category: str | None = None,
         semantic: bool = True,
+        offset: int = 0,
     ) -> MemorySearchResponse:
-        """Searches memories by meaning or text."""
+        """Searches memories by meaning or text. Uses cursor-based pagination."""
         params: dict[str, Any] = {
             "q": q,
             "limit": limit,
-            "offset": offset,
             "semantic": semantic,
         }
+        if cursor:
+            params["cursor"] = cursor
         if category:
             params["category"] = category
+        if offset:
+            params["offset"] = offset
         r = await self._client.get("/search", params=params)
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
@@ -405,19 +423,27 @@ class AsyncKoreClient:
         self,
         subject: str,
         limit: int = 20,
+        cursor: str | None = None,
         offset: int = 0,
     ) -> MemorySearchResponse:
-        """Returns the memory timeline for a subject (oldest to newest)."""
-        r = await self._client.get(
-            "/timeline",
-            params={
-                "subject": subject,
-                "limit": limit,
-                "offset": offset,
-            },
-        )
+        """Returns the memory timeline for a subject (oldest to newest). Uses cursor-based pagination."""
+        params: dict[str, Any] = {
+            "subject": subject,
+            "limit": limit,
+        }
+        if cursor:
+            params["cursor"] = cursor
+        if offset:
+            params["offset"] = offset
+        r = await self._client.get("/timeline", params=params)
         _raise_for_status(r)
         return MemorySearchResponse(**r.json())
+
+    async def get(self, memory_id: int) -> dict[str, Any]:
+        """Gets a single memory by ID. Raises KoreNotFoundError if not found."""
+        r = await self._client.get(f"/memories/{memory_id}")
+        _raise_for_status(r)
+        return r.json()
 
     async def delete(self, memory_id: int) -> bool:
         """Deletes a memory. Returns True if deleted."""

@@ -4,8 +4,9 @@ Exposes save, search, timeline, decay and compress as MCP tools
 for direct integration with Claude, Cursor, and other MCP clients.
 
 Usage:
-  python -m src.mcp_server                     # stdio (default)
-  python -m src.mcp_server --transport sse      # SSE for web
+  kore-mcp                                       # stdio (default)
+  kore-mcp --transport streamable-http            # HTTP transport (porta 8766)
+  kore-mcp --transport streamable-http --port 9000  # HTTP porta custom
 """
 
 from __future__ import annotations
@@ -338,7 +339,32 @@ def health_resource() -> str:
 
 
 def main():
-    mcp.run()
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Kore MCP Server")
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http", "sse"],
+        default="stdio",
+        help="Transport protocol (default: stdio)",
+    )
+    parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="Host per HTTP transport (default: 127.0.0.1)",
+    )
+    parser.add_argument(
+        "--port",
+        type=int,
+        default=8766,
+        help="Porta per HTTP transport (default: 8766)",
+    )
+    args = parser.parse_args()
+
+    if args.transport in ("streamable-http", "sse"):
+        mcp.run(transport=args.transport, host=args.host, port=args.port)
+    else:
+        mcp.run()
 
 
 if __name__ == "__main__":
